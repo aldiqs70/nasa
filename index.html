@@ -63,6 +63,10 @@
   .crit { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12.5px; padding:4px 0; border-bottom:1px solid rgba(44,58,110,.55); }
   .crit:last-child { border-bottom:none; }
   .crit .val { font-family:'Space Grotesk', Arial, sans-serif; direction:ltr; }
+  .mixbar { display:flex; height:16px; border-radius:6px; overflow:hidden; margin:6px 0 4px; border:1px solid var(--line); }
+  .mixbar span { display:block; height:100%; }
+  .mixleg { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; }
+  .mixleg i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-left:4px; vertical-align:middle; }
   .refline { font-size:11.5px; color:var(--muted); margin-top:6px; line-height:1.6; }
 
   #modal { display:none; position:absolute; inset:0; background:rgba(5,8,20,.55); }
@@ -194,7 +198,7 @@
 
 <script>
   // always load the latest config.js and scripts (avoid stale browser cache after an update)
-  (function () { var v = Date.now(); ['config.js', 'js/sunearth.js', 'js/terrain.js', 'js/sites.js'].forEach(function (f) { document.write('<script src="' + f + '?v=' + v + '"><\/script>'); }); })();
+  (function () { var v = Date.now(); ['config.js', 'js/sunearth.js', 'js/terrain.js', 'js/sites.js', 'js/rocks.js'].forEach(function (f) { document.write('<script src="' + f + '?v=' + v + '"><\/script>'); }); })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/cesium@1/Build/Cesium/Cesium.js"></script>
 <script>
@@ -212,7 +216,7 @@
   Cesium.Ion.defaultAccessToken = token;
 
   // ---------- Data: ephemeris, terrain, NASA reference maps ----------
-  let eph = null, terrain = null, refSun = null, refEarth = null;
+  let eph = null, terrain = null, refSun = null, refEarth = null, rockMap = null;
   try {
     const [meta, bin] = await Promise.all([
       fetch('data/out/ephem.json').then((r) => { if (!r.ok) throw new Error('ephem.json ' + r.status); return r.json(); }),
@@ -226,6 +230,7 @@
   try { terrain = await Terrain.load('data/terrain/'); } catch (e) { console.warn('No terrain yet:', e.message); }
   try { refSun = await Terrain.loadRef('data/terrain/', 'nasa_sun'); } catch (e) { console.warn('No NASA sun map:', e.message); }
   try { refEarth = await Terrain.loadRef('data/terrain/', 'nasa_earth'); } catch (e) { console.warn('No NASA Earth map:', e.message); }
+  try { rockMap = await RockMap.load('data/rocks/lp_south.json'); } catch (e) { console.warn('No rock map:', e.message); }
 
   $('note').innerHTML = terrain
     ? 'الإضاءة والاتصال محسوبة مع حجب التضاريس (LOLA). اكبس على أي نقطة أو اختار موقع لتحليله.<br>الطاقة للوح عمودي 1 م² بكفاءة 30% بيلف مع الشمس، على ارتفاع 2 م فوق السطح.'
@@ -490,6 +495,7 @@
       '<p><b>الصخور:</b> ' + sel.site.rock + '</p>' +
       '<p><b>ملاحظة الهبوط:</b> ' + sel.site.landing + '</p>' +
       '<p><b>درجة الثقة:</b> ' + sel.site.confidence + ' · ' + tag('warn', 'الإحداثيات قيد التحقق من المصدر') + '</p>') : '';
+    $('aGeo').innerHTML += rockHTML(sel.lat, sel.lon);
 
     $('mLit').textContent = a.litPct.toFixed(1) + '%';
     $('mDark').textContent = dur(a.longestDarkH);
@@ -527,6 +533,25 @@
     drawChart(a.series);
     drawHorizon();
   }
+  // estimated rock mix from Lunar Prospector FeO + Th (see js/rocks.js)
+  const MIX = [
+    { k: 'anorthosite', ar: 'أنورثوسيت', color: '#e9e4d6' },
+    { k: 'mafic', ar: 'بازلت / نوريت (غني بالحديد)', color: '#5d6478' },
+    { k: 'kreep', ar: 'KREEP (غني بالثوريوم)', color: '#ff8a4c' },
+  ];
+  function rockHTML(lat, lon) {
+    if (!rockMap) return '';
+    const r = rockMap.at(lat, lon);
+    if (!r) return '<h3>التركيب الصخري التقديري</h3><p class="muted" style="font-size:12px">النقطة خارج خريطة الكيمياء (أبعد من 300 كم عن القطب).</p>';
+    return '<h3>التركيب الصخري التقديري (من المدار)</h3>' +
+      '<div class="mixbar">' + MIX.map((m) => '<span title="' + m.ar + '" style="width:' + r[m.k].toFixed(1) + '%; background:' + m.color + '"></span>').join('') + '</div>' +
+      '<div class="mixleg">' + MIX.map((m) => '<span><i style="background:' + m.color + '"></i>' + m.ar + ' <b class="num">' + Math.round(r[m.k]) + '%</b></span>').join('') + '</div>' +
+      '<p class="muted" style="font-size:11.5px; line-height:1.6; margin-top:4px">FeO <span class="num">' + r.FeO.toFixed(1) + ' wt%</span> · Th <span class="num">' + r.Th.toFixed(2) + ' ppm</span> — ' +
+      'من مطياف أشعة غاما على Lunar Prospector. الدقة حوالي 45 كم، يعني هاي نسب المنطقة المحيطة بشكل عام، مش صخرة بعينها. ' +
+      'البريشيا والريغوليث هم خليط مكسّر من هاي الأنواع. تقدير بنموذج من 3 مكونات، والخطأ تقريباً ±10–15%. ' +
+      '<a href="data/rocks/south_pole_rock_mix.csv" download>تنزيل الجدول (CSV)</a></p>';
+  }
+
   $('period').onchange = runAnalysis;
   $('btnClose').onclick = () => { $('analysis').style.display = 'none'; if (marker) { viewer.entities.remove(marker); marker = null; } selected = null; $('siteSel').value = ''; redraw(); };
 

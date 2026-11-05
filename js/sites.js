@@ -67,7 +67,7 @@
   const CRITERIA = [
     { key: 'sun', label: 'توفر ضوء الشمس', status: 'calc' },
     { key: 'comm', label: 'رؤية الأرض للاتصال', status: 'calc' },
-    { key: 'slope', label: 'انحدار السطح', status: 'soon' },
+    { key: 'slope', label: 'انحدار السطح', status: 'calc' },
     { key: 'psr', label: 'البعد عن المناطق المظللة دائماً (جليد محتمل)', status: 'soon' },
     { key: 'boulders', label: 'كثافة الصخور وتوزيعها', status: 'na', note: 'يحتاج صور LROC NAC بدقة متر' },
     { key: 'regolith', label: 'عمق الريغوليث وقدرة تحمّله', status: 'na', note: 'يحتاج قياسات سطحية أو رادار' },
@@ -81,6 +81,7 @@
     { name: 'Cesium Moon', url: 'https://cesium.com/platform/cesium-ion/content/cesium-moon/', what: 'القمر ثلاثي الأبعاد' },
     { name: 'Lunar South Pole Atlas (LPI)', url: 'https://www.lpi.usra.edu/lunar/lunar-south-pole-atlas/', what: 'أطلس القطب الجنوبي' },
     { name: 'NASA Solar System Treks', url: 'https://trek.nasa.gov/', what: 'خرائط تفاعلية من ناسا' },
+    { name: 'Lunar Prospector GRS — FeO & Th half-degree maps (Lawrence et al. 2002, 2003)', url: 'https://pds-geosciences.wustl.edu/missions/lunarp/reduced_special.html', what: 'كيمياء السطح لتقدير نسب الصخور' },
     { name: 'NASA Planetary Data System', url: 'https://pds.nasa.gov/', what: 'أرشيف بيانات الكواكب' },
   ];
 
