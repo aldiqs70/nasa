@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "radius_m": 1737400.0,
+  "crs": "+proj=stere +lat_0=-90 +lon_0=0 +R=1737400",
+  "source": "LDEM_80S_80MPP_ADJ.tiff",
+  "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF",
+  "levels": [
+    {
+      "name": "L0",
+      "file": "dem_L0.bin",
+      "res": 80,
+      "nx": 1000,
+      "ny": 1000,
+      "xmin": -40000,
+      "ymax": 40000
+    },
+    {
+      "name": "L1",
+      "file": "dem_L1.bin",
+      "res": 160,
+      "nx": 1875,
+      "ny": 1875,
+      "xmin": -149920,
+      "ymax": 149920
+    },
+    {
+      "name": "L2",
+      "file": "dem_L2.bin",
+      "res": 640,
+      "nx": 938,
+      "ny": 938,
+      "xmin": -300160,
+      "ymax": 300160
+    }
+  ]
+}
