@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunar South Pole Planner</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1/Build/Cesium/Widgets/widgets.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0b1026; --panel:rgba(15,21,48,.92); --line:#2c3a6e; --text:#f2efe8; --muted:#a9b3d6; --orange:#ff8a4c; --blue:#7cc8ff; --green:#8fe3b3; --red:#ff6b6b; --yellow:#ffd166; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:'IBM Plex Sans Arabic', Tahoma, sans-serif; overflow:hidden; }
+  #moon { position:absolute; inset:0; }
+  .panel { position:absolute; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px; backdrop-filter:blur(6px); box-sizing:border-box; }
+  .num { font-family:'Space Grotesk', Arial, sans-serif; direction:ltr; unicode-bidi:isolate; }
+  h2 { margin:0 0 6px; font-size:14px; color:var(--blue); font-weight:600; }
+  h3 { margin:10px 0 4px; font-size:13px; color:var(--orange); font-weight:600; }
+  .muted { color:var(--muted); }
+  a { color:var(--blue); }
+
+  #title { top:12px; right:12px; width:300px; }
+  #title h1 { margin:0; font-family:'Space Grotesk', Arial, sans-serif; font-size:18px; }
+  #title p { margin:2px 0 0; color:var(--muted); font-size:12px; }
+
+  #readout { top:80px; right:12px; width:300px; }
+  .row { display:flex; justify-content:space-between; gap:10px; padding:3px 0; border-bottom:1px solid rgba(44,58,110,.55); font-size:13px; }
+  .row:last-child { border-bottom:none; }
+  .row > span:first-child { color:var(--muted); }
+  .sep { height:6px; }
+  .tag { padding:1px 8px; border-radius:999px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .tag.lit { background:var(--yellow); color:#3a2600; } .tag.part { background:#ffb38a; color:#3a1700; } .tag.dark { background:#39446e; color:#dfe5ff; }
+  .tag.ok { background:var(--blue); color:#06223a; } .tag.no { background:#5b2a35; color:#ffd9de; }
+  .tag.calc { background:#1f5c45; color:#c9f5df; } .tag.soon { background:#5c4a1f; color:#ffe9b0; } .tag.na { background:#3a3f55; color:#cdd3ea; } .tag.warn { background:#5c4a1f; color:#ffe9b0; }
+  #note { margin-top:6px; font-size:11px; color:var(--muted); line-height:1.5; }
+
+  #nav { bottom:24px; right:12px; display:flex; gap:6px; flex-wrap:wrap; max-width:470px; }
+  button, select, input[type=date] { background:transparent; color:var(--text); border:1px solid var(--line); border-radius:9px; padding:6px 11px; font:inherit; font-size:12.5px; cursor:pointer; }
+  button:hover { border-color:var(--blue); color:var(--blue); }
+  button.primary { border-color:var(--orange); color:var(--orange); }
+  select option { background:#0f1530; }
+  input[type=date] { color-scheme:dark; }
+
+  #timep { bottom:44px; left:12px; width:420px; }
+  #timep .line { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12.5px; flex-wrap:wrap; }
+  #timep input[type=range] { flex:1; accent-color:var(--orange); }
+  #clock { font-size:15px; }
+  label.chk { display:flex; align-items:center; gap:4px; cursor:pointer; }
+
+  #analysis { display:none; top:12px; left:12px; width:430px; max-height:calc(100vh - 250px); overflow-y:auto; }
+  #analysis .head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:8px; }
+  .metric { background:rgba(124,200,255,.07); border-radius:9px; padding:6px 8px; }
+  .metric .k { font-size:11px; color:var(--muted); }
+  .metric .v { font-size:17px; font-family:'Space Grotesk', Arial, sans-serif; direction:ltr; text-align:right; }
+  .metric .r { font-size:11px; color:var(--muted); font-family:'Space Grotesk', Arial, sans-serif; direction:ltr; text-align:right; }
+  canvas.chart { width:100%; display:block; margin-top:8px; }
+  #chart { height:140px; } #hzChart { height:150px; }
+  .legend { display:flex; gap:12px; font-size:11px; color:var(--muted); margin-top:4px; flex-wrap:wrap; }
+  .sw { display:inline-block; width:10px; height:3px; vertical-align:middle; margin-left:4px; }
+  .geo p { margin:3px 0; font-size:12.5px; line-height:1.6; }
+  .geo b { color:var(--muted); font-weight:600; }
+  .crit { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12.5px; padding:4px 0; border-bottom:1px solid rgba(44,58,110,.55); }
+  .crit:last-child { border-bottom:none; }
+  .crit .val { font-family:'Space Grotesk', Arial, sans-serif; direction:ltr; }
+  .refline { font-size:11.5px; color:var(--muted); margin-top:6px; line-height:1.6; }
+
+  #modal { display:none; position:absolute; inset:0; background:rgba(5,8,20,.55); }
+  #modal .box { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(760px, 92vw); max-height:84vh; overflow-y:auto; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px 18px; }
+  #modal .mhead { display:flex; justify-content:space-between; align-items:center; }
+  .rocks { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-top:10px; }
+  .rock { background:rgba(124,200,255,.06); border-radius:12px; padding:10px 12px; font-size:12.5px; line-height:1.6; }
+  .rock .dot { display:inline-block; width:12px; height:12px; border-radius:50%; vertical-align:middle; margin-left:6px; border:1px solid #0006; }
+  .rock h4 { margin:0 0 4px; font-size:14px; }
+  .src li { margin:4px 0; font-size:13px; }
+  #mapCanvas { width:100%; max-width:560px; aspect-ratio:1/1; display:block; margin:10px auto 0; cursor:crosshair; border-radius:12px; }
+
+  #error { display:none; top:50%; left:50%; transform:translate(-50%,-50%); max-width:460px; border-color:var(--orange); text-align:center; line-height:1.7; }
+  #error code { direction:ltr; display:inline-block; color:var(--orange); }
+  #status { display:none; top:12px; left:50%; transform:translateX(-50%); font-size:12.5px; color:var(--blue); padding:6px 12px; }
+  .cesium-viewer-bottom { left:12px !important; right:auto !important; bottom:4px !important; }
+</style>
+</head>
+<body>
+<div id="moon"></div>
+
+<div id="title" class="panel">
+  <h1>Lunar South Pole Planner</h1>
+  <p>شباب شهاب · الجمعية الفلكية الأردنية · NASA Space Apps 2026</p>
+</div>
+
+<div id="readout" class="panel">
+  <h2>تحت مؤشر الماوس</h2>
+  <div class="row"><span>خط العرض</span><span id="lat" class="num">—</span></div>
+  <div class="row"><span>خط الطول</span><span id="lon" class="num">—</span></div>
+  <div class="row"><span>الارتفاع</span><span id="elev" class="num">—</span></div>
+  <div class="row"><span>الانحدار</span><span id="slope" class="num">—</span></div>
+  <div class="row"><span>البعد عن القطب</span><span id="pole" class="num">—</span></div>
+  <div class="sep"></div>
+  <div class="row"><span>الشمس (ارتفاع / سمت)</span><span id="sunAA" class="num">—</span></div>
+  <div class="row"><span>الأفق باتجاه الشمس</span><span id="hzSun" class="num">—</span></div>
+  <div class="row"><span>الإضاءة</span><span id="sunState">—</span></div>
+  <div class="row"><span>الطاقة الشمسية</span><span id="power" class="num">—</span></div>
+  <div class="sep"></div>
+  <div class="row"><span>الأرض (ارتفاع / سمت)</span><span id="earthAA" class="num">—</span></div>
+  <div class="row"><span>الاتصال مع الأرض</span><span id="earthState">—</span></div>
+  <div class="row" id="refRow" style="display:none"><span>مرجع ناسا (متوسط 18.6 سنة)</span><span id="refVal" class="num">—</span></div>
+  <div id="note"></div>
+</div>
+
+<div id="nav" class="panel">
+  <button id="btnGlobal">القمر كامل</button>
+  <button id="btnPole" class="primary">القطب الجنوبي</button>
+  <button id="btnTop">منظر من فوق</button>
+  <select id="siteSel"><option value="">المواقع المرشّحة…</option></select>
+  <button id="btnMap">خريطة الإضاءة</button>
+  <button id="btnRocks">دليل الصخور</button>
+  <button id="btnSources">المصادر</button>
+</div>
+
+<div id="timep" class="panel">
+  <div class="line" style="margin-top:0; justify-content:space-between;">
+    <span>الوقت <span class="muted">(UTC)</span></span>
+    <span id="clock" class="num">—</span>
+  </div>
+  <div class="line">
+    <input type="date" id="dateIn">
+    <button id="btnNow">الآن</button>
+    <button id="btnPlay">▶ تشغيل</button>
+    <label class="chk"><input type="checkbox" id="sunLight"> ضوء الشمس الحقيقي</label>
+  </div>
+  <div class="line">
+    <label class="chk"><input type="checkbox" id="hiQ"> جودة عالية</label>
+    <label class="chk"><input type="checkbox" id="shadows"> ظلال ثلاثية الأبعاد</label>
+    <span class="muted" style="font-size:11px">(أثقل على الجهاز)</span>
+  </div>
+  <div class="line">
+    <span class="muted">الساعة</span>
+    <input type="range" id="hourIn" min="0" max="23" step="1" value="0">
+  </div>
+</div>
+
+<div id="analysis" class="panel">
+  <div class="head">
+    <h2 style="margin:0;" id="aTitle">تحليل الموقع</h2>
+    <div style="display:flex; gap:6px;">
+      <select id="period">
+        <option value="720">30 يوم</option>
+        <option value="4380">6 أشهر</option>
+        <option value="8760" selected>سنة</option>
+        <option value="all">كل الجدول (5 سنوات)</option>
+      </select>
+      <button id="btnClose" aria-label="إغلاق">✕</button>
+    </div>
+  </div>
+  <div id="aCoords" class="muted num" style="font-size:12px; margin-top:4px; text-align:right;"></div>
+  <div id="aGeo" class="geo"></div>
+  <div class="grid">
+    <div class="metric"><div class="k">نسبة الإضاءة</div><div class="v" id="mLit">—</div><div class="r" id="rLit"></div></div>
+    <div class="metric"><div class="k">أطول فترة ظل</div><div class="v" id="mDark">—</div></div>
+    <div class="metric"><div class="k">متوسط الطاقة</div><div class="v" id="mPow">—</div></div>
+    <div class="metric"><div class="k">نسبة الاتصال</div><div class="v" id="mComm">—</div><div class="r" id="rComm"></div></div>
+    <div class="metric"><div class="k">أطول انقطاع</div><div class="v" id="mGap">—</div></div>
+    <div class="metric"><div class="k">طاقة الفترة</div><div class="v" id="mEnergy">—</div></div>
+  </div>
+  <h3>المنظر من الموقع: خط الأفق ومسار الشمس والأرض</h3>
+  <canvas id="hzChart" class="chart"></canvas>
+  <div class="legend">
+    <span><span class="sw" style="background:#6d7591; height:8px"></span>التضاريس</span>
+    <span><span class="sw" style="background:#ff8a4c; height:6px"></span>مسار الشمس</span>
+    <span><span class="sw" style="background:#7cc8ff; height:6px"></span>مسار الأرض</span>
+    <span class="muted">السمت: 0° شمال (بعيد عن القطب)</span>
+  </div>
+  <h3>عبر الزمن</h3>
+  <canvas id="chart" class="chart"></canvas>
+  <div class="legend">
+    <span><span class="sw" style="background:#ff8a4c"></span>ارتفاع الشمس</span>
+    <span><span class="sw" style="background:#7cc8ff"></span>ارتفاع الأرض</span>
+    <span><span class="sw" style="background:#ffd166; height:8px"></span>مضاء</span>
+    <span><span class="sw" style="background:#3f8fd0; height:8px"></span>اتصال</span>
+  </div>
+  <h3>معايير تقييم موقع الهبوط</h3>
+  <div id="aCrit"></div>
+  <div class="refline" id="aMethod"></div>
+</div>
+
+<div id="modal"><div class="box">
+  <div class="mhead"><h2 id="mTitle" style="margin:0"></h2><button id="mClose" aria-label="إغلاق">✕</button></div>
+  <div id="mBody"></div>
+</div></div>
+
+<div id="error" class="panel"></div>
+<div id="status" class="panel"></div>
+
+<script src="config.js"></script>
+<script src="js/sunearth.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/sites.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cesium@1/Build/Cesium/Cesium.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const showError = (html) => { $('error').innerHTML = html; $('error').style.display = 'block'; };
+  const setStatus = (t) => { $('status').textContent = t; $('status').style.display = t ? 'block' : 'none'; };
+  const { SITES, ROCKS, CRITERIA, SOURCES } = window.SiteData;
+
+  const token = (window.CESIUM_ION_TOKEN || '').trim();
+  if (!token || token.startsWith('PASTE')) {
+    showError('لازم تحط مفتاح Cesium ion أول.<br>افتح ملف <code>config.js</code> والصق المفتاح مكان <code>PASTE_YOUR_TOKEN_HERE</code> ثم حدّث الصفحة.');
+    return;
+  }
+  Cesium.Ion.defaultAccessToken = token;
+
+  // ---------- Data: ephemeris, terrain, NASA reference maps ----------
+  let eph = null, terrain = null, refSun = null, refEarth = null;
+  try {
+    const [meta, bin] = await Promise.all([
+      fetch('data/out/ephem.json').then((r) => { if (!r.ok) throw new Error('ephem.json ' + r.status); return r.json(); }),
+      fetch('data/out/ephem.bin').then((r) => { if (!r.ok) throw new Error('ephem.bin ' + r.status); return r.arrayBuffer(); }),
+    ]);
+    eph = new SunEarth.Ephemeris(meta, new Float32Array(bin));
+  } catch (e) {
+    console.error(e);
+    showError('ما قدرت أقرأ جدول الشمس والأرض <code>data/out/ephem.bin</code>.<br>تأكد إنك فاتح الموقع من خلال الخادم (localhost) مش بفتح الملف مباشرة.<br><code>' + e.message + '</code>');
+  }
+  try { terrain = await Terrain.load('data/terrain/'); } catch (e) { console.warn('No terrain yet:', e.message); }
+  try { refSun = await Terrain.loadRef('data/terrain/', 'nasa_sun'); } catch (e) { console.warn('No NASA sun map:', e.message); }
+  try { refEarth = await Terrain.loadRef('data/terrain/', 'nasa_earth'); } catch (e) { console.warn('No NASA Earth map:', e.message); }
+
+  $('note').innerHTML = terrain
+    ? 'الإضاءة والاتصال محسوبة مع حجب التضاريس (LOLA). اكبس على أي نقطة أو اختار موقع لتحليله.<br>الطاقة للوح عمودي 1 م² بكفاءة 30% بيلف مع الشمس، على ارتفاع 2 م فوق السطح.'
+    : 'التضاريس لسا مش محمّلة: الحساب حالياً بأفق مستوٍ بدون حجب الجبال.<br>الطاقة للوح عمودي 1 م² بكفاءة 30% بيلف مع الشمس.';
+
+  // ---------- Cesium Moon ----------
+  const MOON = Cesium.Ellipsoid.MOON;
+  Cesium.Ellipsoid.default = MOON;
+  const viewer = new Cesium.Viewer('moon', {
+    globe: false, baseLayer: false, baseLayerPicker: false, geocoder: false, sceneModePicker: false,
+    homeButton: false, navigationHelpButton: false, timeline: false, animation: false,
+    fullscreenButton: false, infoBox: false, selectionIndicator: false, skyAtmosphere: false,
+    requestRenderMode: true, maximumRenderTimeChange: Infinity, targetFrameRate: 30,
+  });
+  const HIGH_Q = { sse: 8, res: 1.0 }, LOW_Q = { sse: 32, res: 0.75 };
+  viewer.resolutionScale = LOW_Q.res;
+  if (viewer.scene.postProcessStages && viewer.scene.postProcessStages.fxaa) viewer.scene.postProcessStages.fxaa.enabled = false;
+  const redraw = () => viewer.scene.requestRender();
+  if (!viewer.scene.skyBox && Cesium.SkyBox && typeof Cesium.SkyBox.createEarthSkyBox === 'function') {
+    viewer.scene.skyBox = Cesium.SkyBox.createEarthSkyBox();
+  }
+  if (viewer.scene.sun) viewer.scene.sun.show = false;
+  if (viewer.scene.moon) viewer.scene.moon.show = false;
+  viewer.scene.backgroundColor = Cesium.Color.BLACK;
+
+  const light = new Cesium.DirectionalLight({ direction: Cesium.Cartesian3.clone(viewer.scene.camera.directionWC), intensity: 2.0 });
+  viewer.scene.light = light;
+
+  setStatus('جاري تحميل القمر…');
+  let tileset;
+  try {
+    tileset = await Cesium.Cesium3DTileset.fromIonAssetId(2684829, {
+      maximumScreenSpaceError: LOW_Q.sse,
+      cacheBytes: 192 * 1024 * 1024,
+      maximumCacheOverflowBytes: 64 * 1024 * 1024,
+      dynamicScreenSpaceError: true,
+      foveatedScreenSpaceError: true,
+      preloadFlightDestinations: false,
+    });
+    viewer.scene.primitives.add(tileset);
+  } catch (err) {
+    console.error(err); setStatus('');
+    showError('ما قدرت أحمّل قمر Cesium.<br>تأكد إنك ضفت <b>Cesium Moon</b> لحسابك من Asset Depot، وإن المفتاح صحيح.<br><code>' + (err && err.message ? err.message : err) + '</code>');
+    return;
+  }
+  tileset.loadProgress.addEventListener((p, q) => setStatus(p + q > 0 ? 'جاري تحميل التفاصيل… (' + (p + q) + ')' : ''));
+  tileset.allTilesLoaded.addEventListener(() => setStatus(''));
+  tileset.tileFailed.addEventListener((e) => { console.error('Tile failed:', e.url, e.message); });
+
+  const deg = (lon, lat, h) => Cesium.Cartesian3.fromDegrees(lon, lat, h, MOON);
+  const addPoint = (lon, lat, name, color, extra) => {
+    const c = Cesium.Color.fromCssColorString(color);
+    return viewer.entities.add(Object.assign({
+      position: deg(lon, lat, 2500),
+      point: { pixelSize: 9, color: c, outlineColor: Cesium.Color.BLACK, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+      label: { text: name, font: '600 14px "Space Grotesk", Arial', fillColor: c, outlineColor: Cesium.Color.BLACK, outlineWidth: 3,
+               style: Cesium.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new Cesium.Cartesian2(0, -16), disableDepthTestDistance: Number.POSITIVE_INFINITY,
+               translucencyByDistance: new Cesium.NearFarScalar(4e5, 1, 2e6, 0) },
+    }, extra || {}));
+  };
+  addPoint(0, -90, 'South Pole', '#ff6b6b');
+  for (const s of SITES) {
+    const e = addPoint(s.lon, s.lat, s.name, '#8fe3b3');
+    e.siteId = s.id;
+    const o = document.createElement('option'); o.value = s.id; o.textContent = s.name; $('siteSel').appendChild(o);
+  }
+
+  const fly = (lon, lat, h, pitch, heading = 0) => viewer.camera.flyTo({
+    destination: deg(lon, lat, h),
+    orientation: { heading: Cesium.Math.toRadians(heading), pitch: Cesium.Math.toRadians(pitch), roll: 0 }, duration: 2.5,
+  });
+  const views = {
+    global: () => fly(0, -20, 6000000, -90),
+    pole: () => fly(0, -80, 260000, -35, 180),
+    top: () => fly(0, -90, 220000, -90),
+    site: (s) => fly(s.lon, Math.min(s.lat + 0.55, -80), 26000, -42, 180),
+  };
+  $('btnGlobal').onclick = views.global; $('btnPole').onclick = views.pole; $('btnTop').onclick = views.top;
+  try { await viewer.zoomTo(tileset); } catch (e) { console.warn(e); }
+  setTimeout(views.pole, 1500);
+
+  // ---------- Time ----------
+  const HOUR = 3600e3;
+  let tNow;
+  const range = eph ? eph.range() : [Date.now(), Date.now()];
+  const clampT = (t) => Math.min(Math.max(t, range[0]), range[1] - HOUR);
+  const pad = (n) => String(n).padStart(2, '0');
+  const isoDate = (t) => { const d = new Date(t); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); };
+  const fmtClock = (t) => { const d = new Date(t); return isoDate(t) + '  ' + pad(d.getUTCHours()) + ':00'; };
+  const dayStart = (t) => Date.parse(isoDate(t) + 'T00:00:00Z');
+  if (eph) { $('dateIn').min = isoDate(range[0]); $('dateIn').max = isoDate(range[1] - HOUR); }
+
+  function setTime(t) {
+    tNow = clampT(Math.floor(t / HOUR) * HOUR);
+    $('dateIn').value = isoDate(tNow);
+    $('hourIn').value = new Date(tNow).getUTCHours();
+    $('clock').textContent = fmtClock(tNow);
+    updateLight();
+    if (last) showAt(last);
+    if (selected && $('analysis').style.display === 'block') drawHorizon();
+  }
+  $('hiQ').onchange = () => {
+    const q = $('hiQ').checked ? HIGH_Q : LOW_Q;
+    tileset.maximumScreenSpaceError = q.sse; viewer.resolutionScale = q.res; redraw();
+  };
+  $('dateIn').onchange = () => setTime(Date.parse($('dateIn').value + 'T00:00:00Z') + Number($('hourIn').value) * HOUR);
+  $('hourIn').oninput = () => setTime(dayStart(tNow) + Number($('hourIn').value) * HOUR);
+  $('btnNow').onclick = () => setTime(Date.now());
+  let playTimer = null;
+  $('btnPlay').onclick = () => {
+    if (playTimer) { clearInterval(playTimer); playTimer = null; $('btnPlay').textContent = '▶ تشغيل'; return; }
+    $('btnPlay').textContent = '⏸ إيقاف';
+    playTimer = setInterval(() => { if (tNow >= range[1] - 3 * HOUR) { $('btnPlay').click(); return; } setTime(tNow + 3 * HOUR); }, 250);
+  };
+
+  // Lighting: camera headlight, or the real Sun for the chosen time (+ optional cast shadows)
+  function updateLight() {
+    if ($('sunLight').checked && eph) {
+      const s = eph.at(tNow).sun;
+      light.direction = new Cesium.Cartesian3(-s[0], -s[1], -s[2]);
+    }
+    redraw();
+  }
+  viewer.scene.preRender.addEventListener((scene) => {
+    if (!$('sunLight').checked || !eph) light.direction = Cesium.Cartesian3.clone(scene.camera.directionWC, light.direction);
+  });
+  $('sunLight').onchange = () => { if (!$('sunLight').checked && $('shadows').checked) { $('shadows').checked = false; setShadows(false); } updateLight(); };
+  function setShadows(on) {
+    try {
+      viewer.shadows = on;
+      tileset.shadows = on ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED;
+      if (on && viewer.shadowMap) { viewer.shadowMap.softShadows = false; viewer.shadowMap.size = 2048; viewer.shadowMap.maximumDistance = 300000; viewer.shadowMap.darkness = 0.15; }
+    } catch (e) { console.warn('Shadows not supported:', e); }
+    redraw();
+  }
+  $('shadows').onchange = () => {
+    if ($('shadows').checked && !$('sunLight').checked) { $('sunLight').checked = true; updateLight(); }
+    setShadows($('shadows').checked);
+  };
+
+  // ---------- Horizon cache ----------
+  const hzCache = new Map();
+  function horizonAt(lat, lon) {
+    if (!terrain) return null;
+    const [x, y] = Terrain.ll2xy(lat, lon);
+    const key = Math.round(x / 40) + ',' + Math.round(y / 40);
+    if (hzCache.has(key)) return hzCache.get(key);
+    const hz = terrain.horizon(lat, lon, { mast: 2 });
+    if (hzCache.size > 200) hzCache.clear();
+    hzCache.set(key, hz);
+    return hz;
+  }
+
+  // ---------- Readout ----------
+  const fmtLat = (d) => Math.abs(d).toFixed(4) + '° ' + (d < 0 ? 'S' : 'N');
+  const fmtLon = (d) => Math.abs(d).toFixed(4) + '° ' + (d < 0 ? 'W' : 'E');
+  const tag = (cls, txt) => '<span class="tag ' + cls + '">' + txt + '</span>';
+  const panel = { efficiency: 0.30 };
+  let last = null;
+
+  function clearReadout() {
+    for (const id of ['lat', 'lon', 'elev', 'slope', 'pole', 'sunAA', 'hzSun', 'power', 'earthAA', 'refVal']) $(id).textContent = '—';
+    $('sunState').textContent = '—'; $('earthState').textContent = '—';
+  }
+  function siteGround(p) {
+    // prefer the LOLA DEM height so the observer sits on the same surface the horizon was computed from
+    const hz = horizonAt(p.lat, p.lon);
+    return { hz, h: hz ? hz.h0 : p.h };
+  }
+  function showAt(p) {
+    const { lat, lon } = p;
+    const { hz, h } = siteGround(p);
+    $('lat').textContent = fmtLat(lat);
+    $('lon').textContent = fmtLon(lon);
+    $('elev').textContent = Math.round(h).toLocaleString('en-US') + ' m' + (hz ? ' (LOLA)' : '');
+    const sl = terrain ? terrain.slope(lat, lon, 1) : null;
+    $('slope').textContent = sl ? sl.deg.toFixed(1) + '°' : (terrain ? 'خارج التغطية' : '—');
+    $('pole').textContent = lat < 0 ? ((90 + lat) * Math.PI / 180 * SunEarth.R_MOON_KM).toFixed(1) + ' km' : '—';
+    if (refSun) {
+      const a = refSun.at(lat, lon), b = refEarth ? refEarth.at(lat, lon) : null;
+      $('refRow').style.display = '';
+      $('refVal').textContent = (a == null ? '—' : 'Sun ' + a + '%') + (b == null ? '' : ' · Earth ' + b + '%');
+    }
+    if (!eph) return;
+    const hfn = Terrain.horizonFn(hz);
+    const r = SunEarth.evaluate(eph, tNow, SunEarth.localFrame(lat, lon, h), hfn, panel);
+    $('sunAA').textContent = r.sun.alt.toFixed(2) + '° / ' + r.sun.az.toFixed(1) + '°';
+    $('hzSun').textContent = hfn ? r.hSun.toFixed(2) + '°' : 'مستوٍ (0°)';
+    $('sunState').innerHTML = r.lit >= 1 ? tag('lit', 'مضاء') : r.lit > 0 ? tag('part', 'جزئي ' + Math.round(r.lit * 100) + '%') : tag('dark', 'ظل');
+    $('power').textContent = Math.round(r.power) + ' W/m²';
+    $('earthAA').textContent = r.earth.alt.toFixed(2) + '° / ' + r.earth.az.toFixed(1) + '°';
+    $('earthState').innerHTML = r.earthVisible ? tag('ok', 'متاح') : tag('no', r.earth.alt > 0 && hfn ? 'محجوب بالتضاريس' : 'غير متاح');
+  }
+
+  function pick(screenPos) {
+    if (!viewer.scene.pickPositionSupported) return null;
+    const c3 = viewer.scene.pickPosition(screenPos);
+    if (!Cesium.defined(c3)) return null;
+    const c = Cesium.Cartographic.fromCartesian(c3, MOON);
+    if (!c) return null;
+    return { lat: Cesium.Math.toDegrees(c.latitude), lon: Cesium.Math.toDegrees(c.longitude), h: c.height };
+  }
+
+  let moveTimer = null;
+  const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+  handler.setInputAction((m) => {
+    const pos = Cesium.Cartesian2.clone(m.endPosition);
+    clearTimeout(moveTimer);
+    moveTimer = setTimeout(() => {
+      const p = pick(pos);
+      if (p) { last = p; showAt(p); } else { last = null; clearReadout(); }
+    }, terrain ? 150 : 80);
+  }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+  handler.setInputAction((m) => {
+    const hit = viewer.scene.pick(m.position);
+    if (hit && hit.id && hit.id.siteId) { openSite(hit.id.siteId); return; }
+    const p = pick(m.position);
+    if (p) analyseAt(p, null);
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+  // ---------- Analysis ----------
+  let marker = null, selected = null, lastA = null;
+  function openSite(id) {
+    const s = SITES.find((x) => x.id === id); if (!s) return;
+    $('siteSel').value = id;
+    views.site(s);
+    analyseAt({ lat: s.lat, lon: s.lon, h: 0 }, s);
+  }
+  $('siteSel').onchange = () => { if ($('siteSel').value) openSite($('siteSel').value); };
+
+  function analyseAt(p, site) {
+    selected = Object.assign({}, p, { site });
+    if (marker) viewer.entities.remove(marker);
+    marker = viewer.entities.add({
+      position: deg(p.lon, p.lat, 2500),
+      point: { pixelSize: 12, color: Cesium.Color.fromCssColorString('#ffd166'), outlineColor: Cesium.Color.BLACK, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+    });
+    redraw();
+    runAnalysis();
+  }
+
+  function runAnalysis() {
+    if (!selected || !eph) return;
+    const sel = selected;
+    const { hz, h } = siteGround(sel);
+    sel.hz = hz; sel.h0 = h;
+    const hfn = Terrain.horizonFn(hz);
+    const all = $('period').value === 'all';
+    const t0 = all ? range[0] : clampT(dayStart(tNow));
+    const hours = all ? Math.floor((range[1] - range[0]) / HOUR) : Number($('period').value);
+    const span = Math.min(hours, Math.floor((range[1] - t0) / HOUR));
+    const fr = SunEarth.localFrame(sel.lat, sel.lon, h);
+    const a = SunEarth.analyse(eph, t0, span, fr, hfn, panel, 1);
+    lastA = a;
+    const dur = (x) => x >= 48 ? (x / 24).toFixed(1) + ' d' : Math.round(x) + ' h';
+
+    $('aTitle').textContent = sel.site ? sel.site.name : 'تحليل الموقع';
+    $('aCoords').textContent = fmtLat(sel.lat) + ' · ' + fmtLon(sel.lon) + ' · ' + Math.round(h) + ' m · ' + isoDate(t0) + ' → ' + isoDate(t0 + span * HOUR);
+    $('aGeo').innerHTML = sel.site ? (
+      '<h3>الجيولوجيا</h3>' +
+      '<p><b>التضاريس:</b> ' + sel.site.terrain + '</p>' +
+      '<p><b>الصخور:</b> ' + sel.site.rock + '</p>' +
+      '<p><b>ملاحظة الهبوط:</b> ' + sel.site.landing + '</p>' +
+      '<p><b>درجة الثقة:</b> ' + sel.site.confidence + ' · ' + tag('warn', 'الإحداثيات قيد التحقق من المصدر') + '</p>') : '';
+
+    $('mLit').textContent = a.litPct.toFixed(1) + '%';
+    $('mDark').textContent = dur(a.longestDarkH);
+    $('mPow').textContent = Math.round(a.meanPowerW) + ' W/m²';
+    $('mComm').textContent = a.commPct.toFixed(1) + '%';
+    $('mGap').textContent = dur(a.longestGapH);
+    $('mEnergy').textContent = a.energyKWh.toFixed(0) + ' kWh/m²';
+    const rs = refSun ? refSun.at(sel.lat, sel.lon) : null, re = refEarth ? refEarth.at(sel.lat, sel.lon) : null;
+    $('rLit').textContent = rs == null ? '' : 'NASA: ' + rs + '%';
+    $('rComm').textContent = re == null ? '' : 'NASA: ' + re + '%';
+
+    // landing criteria
+    const sl = terrain ? terrain.slope(sel.lat, sel.lon, 1) : null;
+    const psrKm = refSun ? refSun.nearest(sel.lat, sel.lon, 0, 60) : null;
+    const vals = {
+      sun: a.litPct.toFixed(1) + '% · longest dark ' + dur(a.longestDarkH),
+      comm: a.commPct.toFixed(1) + '% · longest gap ' + dur(a.longestGapH),
+      slope: sl ? sl.deg.toFixed(1) + '° (' + Math.round(sl.baseline) + ' m baseline)' + (sl.deg > 15 ? ' ⚠' : '') : null,
+      psr: psrKm != null ? psrKm.toFixed(1) + ' km' : (refSun ? '> 60 km' : null),
+    };
+    $('aCrit').innerHTML = CRITERIA.map((c) => {
+      let st = c.status, right;
+      if (vals[c.key] != null) { st = 'calc'; right = '<span class="val">' + vals[c.key] + '</span> ' + tag('calc', 'محسوب'); }
+      else if (st === 'na') right = '<span class="muted" style="font-size:11px">' + c.note + '</span> ' + tag('na', 'غير محسوب');
+      else right = tag('soon', 'بعد تحميل البيانات');
+      return '<div class="crit"><span>' + c.label + '</span><span>' + right + '</span></div>';
+    }).join('');
+    $('aMethod').innerHTML = (hz
+      ? 'الأفق محسوب من خريطة LOLA لمسافة تصل 300 كم مع مراعاة انحناء القمر. '
+      : '<b>بدون تضاريس:</b> الأفق مستوٍ، لذلك الأرقام تقريبية. ') +
+      'لا نعطي "علامة أمان" إجمالية: الصخور وعمق الريغوليث تحتاج بيانات أدق. ' +
+      (refSun ? 'قيم NASA مرجعية من Mazarico وزملائه (متوسط 18.6 سنة، دقة 60 م)، ونقارن فيها حساباتنا للتحقق.' : '');
+
+    $('analysis').style.display = 'block';
+    drawChart(a.series);
+    drawHorizon();
+  }
+  $('period').onchange = runAnalysis;
+  $('btnClose').onclick = () => { $('analysis').style.display = 'none'; if (marker) { viewer.entities.remove(marker); marker = null; } selected = null; $('siteSel').value = ''; redraw(); };
+
+  function setupCanvas(cv) {
+    const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    return { g, W, H };
+  }
+
+  function drawHorizon() {
+    if (!selected || !lastA) return;
+    const { g, W, H } = setupCanvas($('hzChart'));
+    const s = lastA.series, hz = selected.hz;
+    let hzMax = 0; if (hz) for (let b = 0; b < 360; b++) hzMax = Math.max(hzMax, hz.elev[b]);
+    const top = 8, bot = H - 16, yMin = -8, yMax = Math.max(10, Math.ceil(hzMax + 2));
+    const X = (az) => (az / 360) * W;
+    const Y = (v) => top + (yMax - Math.max(yMin, Math.min(yMax, v))) / (yMax - yMin) * (bot - top);
+    // grid
+    g.strokeStyle = 'rgba(169,179,214,.25)'; g.lineWidth = 1;
+    for (let v = -8; v <= yMax; v += 2) { g.beginPath(); g.moveTo(0, Y(v)); g.lineTo(W, Y(v)); g.stroke(); }
+    // sun and earth paths over the period (decimated)
+    const stepI = Math.max(1, Math.floor(s.t.length / 2500));
+    for (let i = 0; i < s.t.length; i += stepI) {
+      g.fillStyle = 'rgba(124,200,255,.35)'; g.fillRect(X(s.earthAz[i]), Y(s.earthAlt[i]), 1.5, 1.5);
+      g.fillStyle = 'rgba(255,138,76,.45)'; g.fillRect(X(s.sunAz[i]), Y(s.sunAlt[i]), 1.5, 1.5);
+    }
+    // terrain silhouette
+    g.beginPath(); g.moveTo(0, bot);
+    for (let b = 0; b <= 360; b++) { const e = hz ? hz.elev[b % 360] : 0; g.lineTo(X(b), Y(e)); }
+    g.lineTo(W, bot); g.closePath(); g.fillStyle = 'rgba(109,117,145,.9)'; g.fill();
+    // current Sun / Earth
+    if (eph) {
+      const r = SunEarth.evaluate(eph, tNow, SunEarth.localFrame(selected.lat, selected.lon, selected.h0 || 0), Terrain.horizonFn(hz), panel);
+      g.fillStyle = '#ffd166'; g.beginPath(); g.arc(X(r.sun.az), Y(r.sun.alt), 5, 0, 7); g.fill();
+      g.fillStyle = '#7cc8ff'; g.beginPath(); g.arc(X(r.earth.az), Y(r.earth.alt), 5, 0, 7); g.fill();
+    }
+    g.fillStyle = '#a9b3d6'; g.font = '11px "Space Grotesk", Arial'; g.textAlign = 'center';
+    for (const [az, lab] of [[0, 'N'], [90, 'E'], [180, 'S'], [270, 'W'], [360, 'N']]) g.fillText(lab, Math.min(W - 6, Math.max(6, X(az))), H - 3);
+    g.textAlign = 'right'; g.fillText('+' + yMax + '°', W - 2, Y(yMax) + 10); g.fillText('0°', W - 2, Y(0) - 2);
+  }
+
+  function drawChart(s) {
+    const { g, W, H } = setupCanvas($('chart'));
+    const n = s.t.length; if (!n) return;
+    const top = 16, bot = H - 18, yMin = -9, yMax = 9;
+    const X = (i) => (i / (n - 1)) * W;
+    const Y = (v) => top + (yMax - v) / (yMax - yMin) * (bot - top);
+    const bw = Math.max(1, W / n + 0.5);
+    for (let i = 0; i < n; i++) {
+      if (s.lit[i] > 0) { g.fillStyle = 'rgba(255,209,102,' + (0.25 + 0.75 * s.lit[i]) + ')'; g.fillRect(X(i), 0, bw, 5); }
+      if (s.comm[i]) { g.fillStyle = '#3f8fd0'; g.fillRect(X(i), 7, bw, 5); }
+    }
+    g.strokeStyle = 'rgba(169,179,214,.5)'; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(0, Y(0)); g.lineTo(W, Y(0)); g.stroke(); g.setLineDash([]);
+    const stepI = Math.max(1, Math.floor(n / 3000));
+    const line = (arr, col) => { g.strokeStyle = col; g.lineWidth = 1.2; g.beginPath(); for (let i = 0; i < n; i += stepI) { const x = X(i), y = Y(arr[i]); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); };
+    line(s.earthAlt, '#7cc8ff'); line(s.sunAlt, '#ff8a4c');
+    g.fillStyle = '#a9b3d6'; g.font = '11px "Space Grotesk", Arial';
+    g.textAlign = 'left'; g.fillText(isoDate(s.t[0]), 2, H - 4);
+    g.textAlign = 'right'; g.fillText(isoDate(s.t[n - 1]), W - 2, H - 4);
+    g.fillText('+9°', W - 2, Y(9) + 10); g.fillText('0°', W - 2, Y(0) - 3); g.fillText('−9°', W - 2, Y(-9) - 2);
+  }
+
+  // ---------- Modals: rock guide, sources, illumination map ----------
+  function openModal(title, html) { $('mTitle').textContent = title; $('mBody').innerHTML = html; $('modal').style.display = 'block'; }
+  $('mClose').onclick = () => { $('modal').style.display = 'none'; };
+  $('modal').onclick = (e) => { if (e.target === $('modal')) $('modal').style.display = 'none'; };
+
+  $('btnRocks').onclick = () => openModal('دليل الصخور القمرية', '<div class="rocks">' + ROCKS.map((r) =>
+    '<div class="rock"><h4><span class="dot" style="background:' + r.color + '"></span>' + r.ar + ' <span class="muted num">(' + r.name + ')</span></h4>' +
+    '<div><b class="muted">التركيب:</b> ' + r.composition + '</div><div><b class="muted">اللون:</b> ' + r.look + '</div>' +
+    '<div><b class="muted">الأصل:</b> ' + r.origin + '</div><div><b class="muted">الانتشار:</b> ' + r.where + '</div>' +
+    '<div><b class="muted">أهميته للهبوط:</b> ' + r.landing + '</div></div>').join('') + '</div>' +
+    '<p class="muted" style="font-size:12px; margin-top:10px">المحتوى الجيولوجي من إعداد فريق شباب شهاب. التصنيفات الجيولوجية للمواقع تحتاج تحقق مقابل الوحدات الجيولوجية المرسومة.</p>');
+
+  $('btnSources').onclick = () => openModal('المصادر والبيانات', '<ul class="src">' + SOURCES.map((s) =>
+    '<li><a href="' + s.url + '" target="_blank" rel="noopener">' + s.name + '</a> <span class="muted">· ' + s.what + '</span></li>').join('') + '</ul>' +
+    '<p class="muted" style="font-size:12px; line-height:1.7">نموذج بحثي لتحدي NASA Space Apps 2026. الإحداثيات تمثل مواقع تضاريس مسمّاة وليست عيّنات صخرية مؤكدة. الاتصال يعني رؤية الأرض هندسياً، وليس جودة الإشارة. الطاقة نموذجية وليست قياساً.</p>');
+
+  $('btnMap').onclick = () => {
+    openModal('خريطة الإضاءة: القطب الجنوبي من فوق', refSun
+      ? '<canvas id="mapCanvas"></canvas><div class="legend" style="justify-content:center"><span>أسود: ظل دائم</span><span>أصفر: مضاء معظم الوقت</span><span>المصدر: NASA LOLA (Mazarico 2011)</span><span>اكبس على أي نقطة لتحليلها</span></div>'
+      : '<p>خريطة الإضاءة المرجعية من ناسا لسا مش محمّلة. بتنضاف لما نجهّز ملفات <code class="num">data/terrain/nasa_sun</code>.</p>');
+    if (refSun) drawMap();
+  };
+  function drawMap() {
+    const cv = $('mapCanvas'); const { g, W, H } = setupCanvas(cv);
+    const n = refSun.nx, img = g.createImageData(n, n), v = refSun.v;
+    for (let k = 0; k < n * n; k++) {
+      const p = v[k], o = k * 4;
+      if (p === 255) { img.data[o + 3] = 0; continue; }
+      const t = p / 100; // black -> blue -> yellow
+      img.data[o] = Math.round(255 * Math.min(1, t * 1.3)); img.data[o + 1] = Math.round(209 * t); img.data[o + 2] = Math.round(102 * t + 60 * (1 - t) * (t > 0 ? 1 : 0)); img.data[o + 3] = 255;
+    }
+    const off = document.createElement('canvas'); off.width = n; off.height = n; off.getContext('2d').putImageData(img, 0, 0);
+    g.imageSmoothingEnabled = true; g.drawImage(off, 0, 0, W, H);
+    const toPx = (lat, lon) => { const [x, y] = Terrain.ll2xy(lat, lon); return [(x - refSun.xmin) / (refSun.nx * refSun.res) * W, (refSun.ymax - y) / (refSun.ny * refSun.res) * H]; };
+    g.font = '600 12px "Space Grotesk", Arial'; g.textAlign = 'center';
+    for (const s of SITES) { const [px, py] = toPx(s.lat, s.lon); g.fillStyle = '#8fe3b3'; g.beginPath(); g.arc(px, py, 4, 0, 7); g.fill(); g.fillStyle = '#f2efe8'; g.fillText(s.name, px, py - 8); }
+    cv.onclick = (e) => {
+      const r = cv.getBoundingClientRect();
+      const x = refSun.xmin + (e.clientX - r.left) / r.width * refSun.nx * refSun.res;
+      const y = refSun.ymax - (e.clientY - r.top) / r.height * refSun.ny * refSun.res;
+      const [lat, lon] = Terrain.xy2ll(x, y);
+      $('modal').style.display = 'none';
+      viewer.camera.flyTo({ destination: deg(lon, Math.min(lat + 0.4, -80), 20000), orientation: { heading: Math.PI, pitch: Cesium.Math.toRadians(-45), roll: 0 }, duration: 2 });
+      analyseAt({ lat, lon, h: 0 }, null);
+    };
+  }
+
+  setTime(Date.now());
+})();
+</script>
+</body>
+</html>

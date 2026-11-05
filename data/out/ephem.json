@@ -1,0 +1,16 @@
+{
+  "frame": "MOON_ME (DE421)",
+  "start_utc": "2026-01-01T00:00:00Z",
+  "step_hours": 1,
+  "count": 43824,
+  "layout": [
+    "sun_x",
+    "sun_y",
+    "sun_z",
+    "sun_dist_au",
+    "earth_x_km",
+    "earth_y_km",
+    "earth_z_km"
+  ],
+  "source": "NAIF SPICE: de421.bsp, moon_pa_de421_1900-2050.bpc, moon_080317.tf"
+}

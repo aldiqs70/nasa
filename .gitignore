@@ -1,0 +1,8 @@
+# Raw NASA downloads are large: keep them local, commit only the prepared grids in data/terrain/
+data/dem/*.TIF
+data/dem/*.tif
+data/dem/*.IMG
+data/dem/*.img
+data/dem/*.LBL
+data/dem/*.lbl
+__pycache__/
