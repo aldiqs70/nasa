@@ -1,3 +1,3 @@
 // الصق مفتاح Cesium ion هون بين علامتي التنصيص، واحفظ الملف
 // Paste your Cesium ion access token between the quotes, then save.
-window.CESIUM_ION_TOKEN = "PASTE_YOUR_TOKEN_HERE";
+window.CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjdnMllVaGcxbjBNUFM2VUUiLCJqdGkiOiI4ZjRlNTIyZC05ZDkyLTQzODEtODMxNS01YzNlMmEwYzJlZTMiLCJpZCI6NTI4MzczLCJzdWIiOiJhbGRpcXMiLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoibmFzYSB3ZWJzaXRlIiwiaWF0IjoxNzkzODg5MzUyfQ.pvqWp-bNxMTS2LxXMa21X5cX8tTXtjnDf5DY2RGwIm8";
