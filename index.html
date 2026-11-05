@@ -192,10 +192,10 @@
 <div id="error" class="panel"></div>
 <div id="status" class="panel"></div>
 
-<script src="config.js"></script>
-<script src="js/sunearth.js"></script>
-<script src="js/terrain.js"></script>
-<script src="js/sites.js"></script>
+<script>
+  // always load the latest config.js and scripts (avoid stale browser cache after an update)
+  (function () { var v = Date.now(); ['config.js', 'js/sunearth.js', 'js/terrain.js', 'js/sites.js'].forEach(function (f) { document.write('<script src="' + f + '?v=' + v + '"><\/script>'); }); })();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/cesium@1/Build/Cesium/Cesium.js"></script>
 <script>
 (async function () {
