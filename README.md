@@ -25,3 +25,5 @@ produce, and whether direct communication with Earth is possible. Click a site f
 - LOLA polar DEM + illumination products (see `data/dem/README.txt`), prepare with `python scripts/prepare_terrain.py`
 
 Research and education prototype — not flight certification. Earth visibility is geometric, not RF link quality.
+
+Live site: https://aldiqs70.github.io/nasa/ · Terrain preparation tool: https://aldiqs70.github.io/nasa/prepare.html
