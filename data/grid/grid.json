@@ -1,0 +1,20 @@
+{
+ "res": 1000,
+ "nx": 320,
+ "ny": 320,
+ "xmin": -160000,
+ "ymax": 160000,
+ "crs": "+proj=stere +lat_0=-90 +lon_0=0 +R=1737400",
+ "period": "2026-01-01..2030-12-31, 2-hour steps; darkness: year 2027",
+ "observer_height_m": 2,
+ "horizon_rays": 360,
+ "files": {
+  "height": "height.bin (int16 m, -32768 none)",
+  "slope": "slope4.bin (uint8 deg*4, 255 none)",
+  "lit": "lit.bin (uint8 % of time Sun visible, disc-weighted, 255 none)",
+  "earth": "earth.bin (uint8 % of time Earth centre above horizon)",
+  "maxLit": "maxlit.bin (uint8 max % of solar disc ever visible; 0 = permanent shadow)",
+  "darkH": "darkh.bin (uint16 longest darkness in 2027, hours)"
+ },
+ "source": "LOLA LDEM_80S_80MPP_ADJ + NAIF DE421 ephemeris, computed by scripts/precompute_grid.js"
+}
