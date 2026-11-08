@@ -212,6 +212,7 @@ td.win { color: var(--gold2); font-weight: 700; }
 .readout b { font-family: var(--num); font-weight: 500; direction: ltr; unicode-bidi: isolate; }
 #view-explore .time-pill { bottom: 20px; padding: 8px 10px 8px 14px; gap: 10px; }
 #view-explore .time-pill input[type=range] { width: 160px; }
+.layers-btn { display: none; top: 14px; inset-inline-start: 14px; width: 42px; height: 42px; z-index: 12; background: rgba(36,31,44,0.9) !important; border: 1px solid var(--line2) !important; }
 .status-chip { top: 16px; left: 50%; transform: translateX(-50%); padding: 8px 14px; font-size: 13px; }
 .compass { width: 120px; height: 120px; }
 .sheet {
@@ -275,7 +276,9 @@ td.win { color: var(--gold2); font-weight: 700; }
   .metrics, .grid3 { grid-template-columns: 1fr 1fr; }
   .brand span { display: none; }
   .layers-panel { display: none; }
-  .layers-panel.open { display: block; inset-inline: 16px; width: auto; }
+  .layers-panel.open { display: block; inset-inline: 16px; width: auto; top: 64px; }
+  .layers-btn { display: grid; }
+  .details-panel { bottom: 84px; max-height: 45%; }
   #view-explore .time-pill input[type=range] { width: 90px; }
   .time-pill { gap: 8px; }
 }

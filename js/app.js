@@ -562,6 +562,7 @@
         $('btnToBattery').onclick = () => { analyse(); setTab('battery'); };
         $('btnToCompare').onclick = () => { if (!sel) return; S.picks.A = { lat: sel.lat, lon: sel.lon, name: sel.name }; go('compare'); setTimeout(() => Cmp.setSlot('A', 'pick:A'), 50); };
         $('sheetClose').onclick = () => $('sheet').classList.remove('open');
+        $('layersBtn').onclick = () => $('layersPanel').classList.toggle('open');
         $('period').onchange = analyse;
         $$('#sheetTabs button').forEach((b) => (b.onclick = () => setTab(b.dataset.t)));
         loadTerrain();
