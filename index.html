@@ -259,6 +259,12 @@
           <div class="muted small" style="margin:10px 0 6px">الألواح</div>
           <div class="seg" id="panelSeg"><button data-m="track" class="on">بتلف مع الشمس</button><button data-m="fixed">ثابتة باتجاه</button></div>
           <label class="fld hidden" id="fixedAzBox" style="margin-top:8px"><span>اتجاه اللوح الثابت (السمت) <b id="lAzLab">0°</b></span><input type="range" id="lAz" min="0" max="355" step="5" value="0"></label>
+          <label class="toggle" style="margin-top:12px">المركبة بتقدر تنام بالظلمة وتصحى مع الشمس<input type="checkbox" id="lHib" checked><i></i></label>
+          <div class="grid2" id="hibBox">
+            <label class="fld"><span>استهلاك وضع النوم (W)</span><input type="number" class="inp" id="lSleep" min="0" step="5" value="20"></label>
+            <label class="fld"><span>بتصحى لما يوصل الشحن (%)</span><input type="number" class="inp" id="lWake" min="10" max="100" step="5" value="50"></label>
+          </div>
+          <p class="note" id="hibNote" style="margin:8px 0 0">بوضع النوم كل الأجهزة بتطفي، وبتضل السخانات بس عشان ما تتجمد البطارية. إذا خلصت البطارية وهي نايمة، السخانات بتطفي والبرد بيتلفها، وهيك بتنتهي المهمة. 0 W يعني تدفئة ما بتحتاج كهرباء، زي مصادر الحرارة النووية الصغيرة بمركبة Chang'e 4.</p>
           <p class="note" style="margin:10px 0 0">الأحجام الجاهزة أمثلة توضيحية، مش مواصفات مركبة حقيقية. الألواح عمودية لأنه الشمس بالقطب واطية (أقل من 2° فوق الأفق).</p>
         </div>
         <div class="card pad">
@@ -313,7 +319,8 @@
       <p>اختار موقعين من القائمة، أو اضغط على الخريطة. بنحسب الاثنين لنفس الفترة ونفس المركبة (من إعدادات مخطط المهمة)، وبنعلّم الأفضل بكل معيار.</p></div>
       <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
         <label class="fld"><span>بداية الفترة</span><input type="date" class="inp" id="cmpFrom" style="width:170px"></label>
-        <label class="fld"><span>المدة</span><select class="inp" id="cmpDays" style="width:150px"><option value="14">14 يوم</option><option value="30" selected>30 يوم</option><option value="90">90 يوم</option><option value="365">سنة</option></select></label>
+        <label class="fld"><span>مدة المهمة</span><select class="inp" id="cmpDays" style="width:140px"><option value="14">14 يوم</option><option value="30" selected>30 يوم</option><option value="90">90 يوم</option><option value="365">سنة</option></select></label>
+        <label class="fld"><span>يوم الهبوط</span><select class="inp" id="cmpFair" style="width:230px"><option value="best" selected>كل موقع بأفضل يوم (خلال شهر)</option><option value="same">نفس التاريخ للموقعين</option></select></label>
         <button class="btn gold" id="btnCmp">قارن</button>
       </div>
     </div>
@@ -332,9 +339,10 @@
         <div class="card pad"><div id="cmpTable"><p class="note">اختار الموقعين واضغط «قارن».</p></div></div>
         <div class="card pad hidden" id="cmpCharts">
           <div class="muted small" style="margin-bottom:4px">خط الأفق: <span style="color:var(--gold)">A</span> و <span style="color:var(--earth)">B</span></div><canvas class="chart" id="cmpHz"></canvas>
-          <div class="muted small" style="margin:12px 0 4px">شحن البطارية خلال الفترة: <span style="color:var(--gold)">A</span> و <span style="color:var(--earth)">B</span></div><canvas class="chart" id="cmpSoc"></canvas>
-          <div class="muted small" style="margin:12px 0 4px">A مع الوقت (شمس / اتصال)</div><canvas class="chart" id="cmpTlA"></canvas>
-          <div class="muted small" style="margin:12px 0 4px">B مع الوقت (شمس / اتصال)</div><canvas class="chart" id="cmpTlB"></canvas>
+          <div class="muted small" style="margin:12px 0 4px">شحن البطارية من لحظة الهبوط: <span style="color:var(--gold)">A</span> و <span style="color:var(--earth)">B</span></div><canvas class="chart" id="cmpSoc"></canvas>
+          <div class="legend" style="margin:14px 0 6px"><span><i style="background:var(--gold)"></i>شغّالة</span><span><i style="background:#8a6a8f"></i>نايمة</span><span><i style="background:var(--risky)"></i>انتهت</span><span><i style="background:rgba(214,164,81,.45)"></i>شمس</span><span><i style="background:var(--earth)"></i>اتصال</span></div>
+          <div class="muted small" style="margin:6px 0 4px">A خلال المهمة</div><canvas class="chart" id="cmpTlA"></canvas>
+          <div class="muted small" style="margin:12px 0 4px">B خلال المهمة</div><canvas class="chart" id="cmpTlB"></canvas>
         </div>
       </div>
     </div>

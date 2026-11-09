@@ -34,6 +34,7 @@ a { color: var(--gold2); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button, input, select { font-family: inherit; font-size: inherit; color: inherit; }
 .num, .ltr { font-family: var(--num); direction: ltr; unicode-bidi: isolate; }
+.ltr { white-space: nowrap; }
 .muted { color: var(--muted); }
 .faint { color: var(--faint); }
 .small { font-size: 12.5px; }
@@ -166,6 +167,11 @@ table.tbl tr.sel td { background: rgba(214, 164, 81, 0.1); }
 table.cmp td, table.cmp th { text-align: center; }
 table.cmp td:first-child, table.cmp th:first-child { text-align: start; color: var(--muted); font-weight: 500; }
 td.win { color: var(--gold2); font-weight: 700; }
+table.cmp tr.grp td { text-align: start; padding: 16px 10px 6px; font-size: 12px; font-weight: 700; color: var(--lavender); letter-spacing: 0.02em; border-bottom: 1px solid var(--line2); background: none; }
+table.cmp tr.grp:hover td { background: none; }
+table.cmp td { line-height: 1.6; }
+table.cmp td .tag { margin: 2px 0; }
+td.win .num { color: var(--gold2); }
 
 /* ---------------- home ---------------- */
 .hero { position: relative; height: calc(100vh - 64px); min-height: 640px; overflow: hidden; background: #0d0a11; }

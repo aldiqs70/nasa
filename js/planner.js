@@ -109,6 +109,56 @@
     };
   }
 
+  /*
+   * Operations with sleep (hibernation).
+   * L: { capWh, loadW, minSoc, hibernate, sleepW, wakeSoc }
+   * States per step: 1 = working, 2 = asleep (only heaters on), 3 = lost.
+   *  - A lander that cannot sleep is lost as soon as the charge drops below minSoc.
+   *  - A lander that can sleep switches to sleepW when the charge drops below minSoc, and wakes up again
+   *    once sunlight has recharged it to wakeSoc. If the battery runs flat while asleep the heaters stop,
+   *    the electronics freeze and it is lost.
+   */
+  function operate(gen, stepH, L, i0, i1) {
+    i0 = i0 || 0; i1 = i1 == null ? gen.length : i1;
+    const cap = L.capWh, minSoc = L.minSoc || 0, floor = cap * minSoc, hib = !!L.hibernate, sleepW = hib ? Math.max(0, L.sleepW || 0) : 0;
+    const wake = cap * Math.min(1, Math.max(minSoc + 0.1, L.wakeSoc != null ? L.wakeSoc : 0.5));
+    const n = i1 - i0, soc = new Float32Array(n), state = new Uint8Array(n);
+    let e = cap, mode = 1, minE = cap, sleeps = 0, run = 0, sleepMax = 0, active = 0, deadAt = -1, firstSleep = -1, eIn = 0, eOut = 0, debt = 0, debtMax = 0;
+    for (let k = i0; k < i1; k++) {
+      const g = gen[k] * stepH, j = k - i0; eIn += g;
+      debt = Math.max(0, debt + L.loadW * stepH - g); if (debt > debtMax) debtMax = debt;
+      if (mode === 3) { state[j] = 3; soc[j] = 0; continue; }
+      const use = (mode === 1 ? L.loadW : sleepW) * stepH; eOut += use;
+      e = Math.min(cap, e + g - use);
+      if (mode === 1 && e < floor) {
+        if (hib) { mode = 2; sleeps++; if (firstSleep < 0) firstSleep = j; }
+        else { mode = 3; deadAt = j; }
+      } else if (mode === 2) {
+        if (e <= 0 && sleepW > 0) { mode = 3; deadAt = j; }
+        else if (e >= wake) mode = 1;
+      }
+      e = Math.max(0, e); if (e < minE) minE = e;
+      state[j] = mode; soc[j] = mode === 3 ? 0 : e / cap;
+      if (mode === 1) active++;
+      if (mode === 2) { run += stepH; if (run > sleepMax) sleepMax = run; } else run = 0;
+    }
+    const alive = deadAt < 0;
+    return {
+      alive, ok: alive && sleeps === 0, sleeps, longestSleepH: sleepMax, uptimePct: 100 * active / n, minSoc: Math.max(0, minE) / cap,
+      deadHour: alive ? null : deadAt * stepH, firstSleepHour: firstSleep < 0 ? null : firstSleep * stepH,
+      failHour: !alive ? deadAt * stepH : firstSleep >= 0 ? firstSleep * stepH : null,
+      soc, state, energyInWh: eIn, energyOutWh: eOut, neededCapWh: debtMax / Math.max(0.05, 1 - minSoc),
+    };
+  }
+
+  // first run of steps where pred is true: { startH, durH } (null if none)
+  function firstRun(arr, pred, stepH, i0, i1) {
+    let k = i0; while (k < i1 && !pred(arr[k])) k++;
+    if (k >= i1) return null;
+    let e = k; while (e < i1 && pred(arr[e])) e++;
+    return { startH: (k - i0) * stepH, durH: (e - k) * stepH, toEnd: e >= i1 };
+  }
+
   // longest run (in hours) of steps where pred is true, within [i0, i1)
   function longestRun(arr, pred, stepH, i0, i1) {
     let run = 0, best = 0;
@@ -189,12 +239,14 @@
     const every = Math.max(1, Math.round((opts.startEveryH || 24) / st));
     let best = null;
     for (let s = 0; s < wSteps && s + mSteps <= ser.n; s += every) {
-      const b = battery(gen, st, opts.loadW, opts.capWh, opts.minSoc, s, s + mSteps);
+      const b = operate(gen, st, opts, s, s + mSteps);
       let lit = 0, comm = 0, both = 0;
       for (let k = s; k < s + mSteps; k++) { lit += ser.lit[k]; comm += ser.comm[k]; if (ser.lit[k] > 0.5 && ser.comm[k]) both++; }
-      const r = { start: s, ok: b.ok, minSoc: b.minSoc, failHour: b.failHour, neededCapWh: b.neededCapWh, energyInWh: b.energyInWh,
-        litPct: 100 * lit / mSteps, commPct: 100 * comm / mSteps, bothPct: 100 * both / mSteps };
-      const key = (r.ok ? 1000 : 0) + r.minSoc * 100 + r.commPct * 0.2 + r.litPct * 0.2;
+      const r = { start: s, ok: b.ok, alive: b.alive, sleeps: b.sleeps, uptimePct: b.uptimePct, longestSleepH: b.longestSleepH, minSoc: b.minSoc, failHour: b.failHour,
+        neededCapWh: b.neededCapWh, energyInWh: b.energyInWh, litPct: 100 * lit / mSteps, commPct: 100 * comm / mSteps, bothPct: 100 * both / mSteps };
+      // landers touch down in sunlight (cameras, hazard avoidance, first charge), so a sunlit landing hour comes first
+      r.sunAtLanding = ser.lit[s] > 0.5;
+      const key = (r.sunAtLanding ? 5000 : 0) + (r.alive ? 1000 : 0) + (r.ok ? 500 : 0) + r.uptimePct * 4 + r.minSoc * 100 + r.commPct * 0.2 + r.litPct * 0.2;
       if (!best || key > best.key) { r.key = key; best = r; }
     }
     if (best) {
@@ -208,14 +260,15 @@
   function score(r, slope, iceKm, w) {
     const sIce = Math.max(0, 1 - iceKm / (w.iceMaxKm || 15));
     const sSlope = Math.max(0, 1 - slope / 15);
-    const parts = { light: r.litPct / 100, comm: r.commPct / 100, battery: r.ok ? r.minSoc : 0, slope: sSlope, ice: sIce };
+    const parts = { light: r.litPct / 100, comm: r.commPct / 100, battery: !r.alive ? 0 : r.ok ? 0.5 + 0.5 * r.minSoc : 0.5 * r.uptimePct / 100, slope: sSlope, ice: sIce };
     const W = { light: w.light != null ? w.light : 0.3, comm: w.comm != null ? w.comm : 0.2, battery: 0.15, slope: 0.1, ice: w.ice != null ? w.ice : 0.25 };
     let s = 0, sw = 0; for (const k in W) { s += W[k] * parts[k]; sw += W[k]; }
     return { score: 100 * s / sw, parts };
   }
   // green / amber / red
   function classify(r, slope) {
-    if (!r || !r.ok || slope > 15) return 'risky';
+    if (!r || !r.alive || slope > 15) return 'risky';
+    if (!r.ok) return 'caution';                       // slept and woke up again
     if (r.minSoc >= 0.3 && slope <= 8 && r.commPct >= 40) return 'safe';
     return 'caution';
   }
@@ -233,14 +286,14 @@
       const gen = panelPower(ser, opts.panel);
       const r = evaluateMission(ser, gen, opts);
       const sc = score(r, C.slope[i], C.iceKm[i], opts.weights || {});
-      r.i = i; r.score = r.ok ? sc.score : sc.score * 0.25; r.parts = sc.parts; r.cls = classify(r, C.slope[i]);
+      r.i = i; r.score = r.alive ? sc.score : sc.score * 0.25; r.parts = sc.parts; r.cls = classify(r, C.slope[i]);
       res[i] = r;
       if (opts.onProgress && i % 400 === 0) opts.onProgress(i / C.n);
     }
     return res;
   }
   function pickTop(C, res, k, minSepKm) {
-    const order = res.filter((r) => r && !r.skipped && r.ok).sort((a, b) => b.score - a.score);
+    const order = res.filter((r) => r && !r.skipped && r.alive).sort((a, b) => b.score - a.score);
     const out = [];
     for (const r of order) {
       if (out.every((o) => Math.hypot(C.x[o.i] - C.x[r.i], C.y[o.i] - C.y[r.i]) / 1000 >= (minSepKm || 6))) out.push(r);
@@ -249,7 +302,7 @@
     return out;
   }
 
-  const api = { R, ll2xy, xy2ll, disc, sampleEphem, siteSeries, panelPower, panelRose, battery, longestRun, Candidates, IceMap,
+  const api = { R, ll2xy, xy2ll, disc, sampleEphem, siteSeries, panelPower, panelRose, battery, operate, firstRun, longestRun, Candidates, IceMap,
     evaluateMission, score, classify, rankSites, pickTop };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Planner = api;
 })(typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : globalThis));

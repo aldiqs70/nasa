@@ -23,7 +23,7 @@ self.onmessage = (ev) => {
       const counts = { safe: 0, caution: 0, risky: 0 };
       for (const r of res) counts[r.cls]++;
       const strip = (r) => ({ i: r.i, lat: C.lat[r.i], lon: C.lon[r.i], h: C.h[r.i], slope: C.slope[r.i], iceKm: C.iceKm[r.i], iceId: C.iceId[r.i],
-        score: r.score, parts: r.parts, cls: r.cls, ok: r.ok, minSoc: r.minSoc, failHour: r.failHour, neededCapWh: r.neededCapWh,
+        score: r.score, parts: r.parts, cls: r.cls, ok: r.ok, alive: r.alive, sleeps: r.sleeps, uptimePct: r.uptimePct, longestSleepH: r.longestSleepH, minSoc: r.minSoc, failHour: r.failHour, neededCapWh: r.neededCapWh,
         litPct: r.litPct, commPct: r.commPct, bothPct: r.bothPct, longestDarkH: r.longestDarkH, longestNoCommH: r.longestNoCommH, startMs: r.startMs });
       self.postMessage({ type: 'result', cls, score: sc, counts, top: top.map(strip), iceKm: C.iceKm }, [cls.buffer, sc.buffer]);
     }

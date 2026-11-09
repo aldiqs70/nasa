@@ -73,6 +73,14 @@
     g.strokeStyle = C.grid; for (const v of [0, 0.25, 0.5, 0.75, 1]) { g.beginPath(); g.moveTo(0, Y(v)); g.lineTo(W, Y(v)); g.stroke(); }
     if (minSoc) { g.fillStyle = 'rgba(224,96,94,0.12)'; g.fillRect(0, Y(minSoc), W, bot - Y(minSoc)); g.strokeStyle = 'rgba(224,96,94,0.7)'; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(0, Y(minSoc)); g.lineTo(W, Y(minSoc)); g.stroke(); g.setLineDash([]); }
     for (const c of curves) {
+      if (c.state && curves.length === 1) {
+        for (let i = 0; i < c.state.length; i++) {
+          if (c.state[i] === 2) { g.fillStyle = 'rgba(138,106,143,0.28)'; g.fillRect(X(i), top, Math.max(1, W / n + 0.5), bot - top); }
+          if (c.state[i] === 3) { g.fillStyle = 'rgba(224,96,94,0.18)'; g.fillRect(X(i), top, Math.max(1, W / n + 0.5), bot - top); }
+        }
+      }
+    }
+    for (const c of curves) {
       g.strokeStyle = c.color || C.sun; g.lineWidth = 2; g.beginPath();
       const st = Math.max(1, Math.floor(c.soc.length / 1500));
       for (let i = 0; i < c.soc.length; i += st) { const x = X(i), y = Y(c.soc[i]); i ? g.lineTo(x, y) : g.moveTo(x, y); }
@@ -80,7 +88,8 @@
     }
     g.fillStyle = C.text; g.textAlign = 'right'; g.fillText('100%', W - 2, Y(1) + 11); g.fillText('0%', W - 2, Y(0) - 3);
     g.textAlign = 'left'; const c0 = curves[0];
-    if (c0 && c0.t0 != null) { g.fillText(isoDate(c0.t0), 2, H - 4); g.textAlign = 'right'; g.fillText(isoDate(c0.t0 + (n - 1) * (c0.stepH || 1) * 3600e3), W - 2, H - 4); }
+    if (opts.relative && c0) { g.fillText('landing', 2, H - 4); g.textAlign = 'right'; g.fillText('+' + Math.round((n - 1) * (c0.stepH || 1) / 24) + ' d', W - 2, H - 4); }
+    else if (c0 && c0.t0 != null) { g.fillText(isoDate(c0.t0), 2, H - 4); g.textAlign = 'right'; g.fillText(isoDate(c0.t0 + (n - 1) * (c0.stepH || 1) * 3600e3), W - 2, H - 4); }
   }
 
   // Polar "rose": energy of a fixed vertical panel facing each azimuth (outer ring = tracking panel)
@@ -102,5 +111,22 @@
     for (const [az, lab] of [[0, 'N'], [90, 'E'], [180, 'S'], [270, 'W']]) { const [x, y] = P(az, 1.13); g.fillText(lab, x, y + 4); }
   }
 
-  root.Charts = { setup, timeline, horizon, soc, rose, isoDate };
+  // Mission strip: Sun, Earth contact and the lander's state (1 working, 2 asleep, 3 lost) over [i0, i0 + state.length)
+  function states(cv, ser, state, i0, opts) {
+    opts = opts || {};
+    const { g, W, H } = setup(cv, opts.height || 74), n = state.length; if (!n) return;
+    const X = (i) => (i / n) * W, bw = Math.max(1, W / n + 0.6);
+    const rows = [[4, 12], [20, 12], [38, 18]];
+    g.fillStyle = 'rgba(194,184,200,0.06)'; for (const [y, h] of rows) g.fillRect(0, y, W, h);
+    for (let i = 0; i < n; i++) {
+      const k = i0 + i, x = X(i);
+      if (ser.lit[k] > 0) { g.fillStyle = 'rgba(214,164,81,' + (0.2 + 0.6 * ser.lit[k]).toFixed(2) + ')'; g.fillRect(x, rows[0][0], bw, rows[0][1]); }
+      if (ser.comm[k]) { g.fillStyle = C.earth; g.fillRect(x, rows[1][0], bw, rows[1][1]); }
+      const s = state[i]; g.fillStyle = s === 1 ? '#d6a451' : s === 2 ? '#8a6a8f' : '#e0605e'; g.fillRect(x, rows[2][0], bw, rows[2][1]);
+    }
+    g.fillStyle = C.text; g.font = '11px "Manrope", Arial'; g.textAlign = 'left';
+    const st = ser.stepH || 1; g.fillText(isoDate(ser.t[i0]), 2, H - 3); g.textAlign = 'right'; g.fillText(isoDate(ser.t[Math.min(ser.n - 1, i0 + n - 1)]), W - 2, H - 3);
+  }
+
+  root.Charts = { setup, timeline, horizon, soc, rose, states, isoDate };
 })(window);

@@ -131,36 +131,53 @@
     const mode = $$('#panelSeg button').find((b) => b.classList.contains('on')).dataset.m;
     return {
       capWh: Math.max(1, +$('lCap').value || 1), loadW: Math.max(0.1, +$('lLoad').value || 0.1), minSoc: (+$('lMin').value || 0) / 100,
+      hibernate: $('lHib').checked, sleepW: Math.max(0, +$('lSleep').value || 0), wakeSoc: Math.min(1, Math.max(0.1, (+$('lWake').value || 50) / 100)),
       panel: { mode, azimuth: +$('lAz').value || 0, area: Math.max(0.01, +$('lArea').value || 0.01), efficiency: Math.min(0.5, Math.max(0.01, (+$('lEff').value || 30) / 100)) },
     };
   }
-  // run the battery over [i0, i1) and, if it fails, find what would fix it
+  const fmtWh = (n) => (n >= 10000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + ' kWh' : Math.round(n).toLocaleString('en-US') + ' Wh');
+  // run the lander over [i0, i1) (work / sleep / lost) and, if it does not work the whole time, find what would fix it
   function batteryReport(ser, L, i0, i1) {
-    const gen = Planner.panelPower(ser, L.panel);
-    const b = Planner.battery(gen, ser.stepH, L.loadW, L.capWh, L.minSoc, i0, i1);
-    const r = { b, gen };
+    i0 = i0 || 0; i1 = i1 == null ? ser.n : i1;
+    const st = ser.stepH, gen = Planner.panelPower(ser, L.panel);
+    const b = Planner.operate(gen, st, L, i0, i1);
+    const r = { b, gen, i0, i1, dark: Planner.firstRun(ser.lit, (v) => v < 0.01, st, i0, i1) };
     if (!b.ok) {
       r.needCap = Math.ceil(b.neededCapWh / 100) * 100;
-      // panel area that would make it (same battery), if any
-      let lo = L.panel.area, hi = L.panel.area, ok = false;
-      for (let k = 0; k < 7 && !ok; k++) { hi *= 2; const g2 = gen.map((v) => v * hi / L.panel.area); ok = Planner.battery(g2, ser.stepH, L.loadW, L.capWh, L.minSoc, i0, i1).ok; }
-      if (ok) { for (let k = 0; k < 12; k++) { const mid = (lo + hi) / 2, g2 = gen.map((v) => v * mid / L.panel.area); if (Planner.battery(g2, ser.stepH, L.loadW, L.capWh, L.minSoc, i0, i1).ok) hi = mid; else lo = mid; } r.needArea = Math.ceil(hi * 10) / 10; }
+      const strict = Object.assign({}, L, { hibernate: false }), scaled = (a) => gen.map((v) => v * a / L.panel.area);
+      let lo = L.panel.area, hi = lo, ok = false;
+      for (let k = 0; k < 7 && !ok; k++) { hi *= 2; ok = Planner.operate(scaled(hi), st, strict, i0, i1).ok; }
+      if (ok) { for (let k = 0; k < 12; k++) { const mid = (lo + hi) / 2; if (Planner.operate(scaled(mid), st, strict, i0, i1).ok) hi = mid; else lo = mid; } r.needArea = Math.ceil(hi * 10) / 10; }
+      if (L.hibernate && !b.alive && L.sleepW > 0) {
+        let a = 0, c = L.sleepW;
+        for (let k = 0; k < 14; k++) { const mid = (a + c) / 2; if (Planner.operate(gen, st, Object.assign({}, L, { sleepW: mid }), i0, i1).alive) a = mid; else c = mid; }
+        r.maxSleepW = Math.floor(a * 10) / 10;
+      }
     }
     return r;
   }
-  function batteryHTML(rep, ser, L, i0) {
-    const b = rep.b, t0 = ser.t[i0];
-    let h = '';
-    if (b.ok) h += '<div class="callout ok"><b>✔ الطاقة كافية.</b> أقل شحن بتوصله البطارية <b class="num">' + Math.round(b.minSoc * 100) + '%</b> (الحد المسموح ' + Math.round(L.minSoc * 100) + '%).</div>';
-    else {
-      const when = new Date(t0 + b.failHour * HOUR);
-      h += '<div class="callout bad"><b>✘ الطاقة مش كافية.</b> البطارية بتنزل تحت ' + Math.round(L.minSoc * 100) + '% بعد <b>' + dur(b.failHour) + '</b> من الهبوط (<span class="num">' + isoDate(when) + ' ' + pad2(when.getUTCHours()) + ':00 UTC</span>).<br>' +
-        'عشان تنجح المهمة: بطارية ≥ <b class="num">' + rep.needCap.toLocaleString('en-US') + ' Wh</b>' +
-        (rep.needArea ? ' أو ألواح ≥ <b class="num">' + rep.needArea + ' m²</b> (مع نفس البطارية)' : '، لأنه في فترة ظلمة طويلة والألواح لحالها ما بتحلّها') +
-        '، أو خفّف الاستهلاك.</div>';
+  function batteryHTML(rep, ser, L) {
+    const b = rep.b, t0 = ser.t[rep.i0], d = rep.dark;
+    const at = (h) => { const x = new Date(t0 + h * HOUR); return '<span class="num">' + isoDate(x) + ' ' + pad2(x.getUTCHours()) + ':00 UTC</span>'; };
+    const usableH = L.capWh * (1 - L.minSoc) / L.loadW;
+    let h;
+    if (b.ok) h = '<div class="callout ok"><b>✔ اشتغلت كل المهمة بدون ما تنام.</b> أقل شحن وصلته البطارية <b class="num">' + Math.round(b.minSoc * 100) + '%</b> (الحد ' + Math.round(L.minSoc * 100) + '%).</div>';
+    else if (!L.hibernate) h = '<div class="callout bad"><b>✘ انتهت المهمة بعد ' + dur(b.deadHour) + '</b> (' + at(b.deadHour) + '). البطارية بتكفي <b>' + dur(usableH) + '</b> بالظلمة بالاستهلاك الكامل، والمركبة مش مصممة تنام وتستنى الشمس.</div>';
+    else if (b.alive) h = '<div class="callout warn"><b>⏾ نامت ' + b.sleeps + ' ' + (b.sleeps === 1 ? 'مرة' : 'مرات') + ' وصحيت مع رجوع الشمس.</b> اشتغلت <b class="num">' + Math.round(b.uptimePct) + '%</b> من وقت المهمة، وأطول نوم كان <b>' + dur(b.longestSleepH) + '</b>. أول نوم بعد ' + dur(b.firstSleepHour) + ' من الهبوط.</div>';
+    else h = '<div class="callout bad"><b>✘ نامت بعد ' + dur(b.firstSleepHour) + '، وبعدين خلصت البطارية وهي نايمة</b> (' + at(b.deadHour) + '). السخانات طفت والبرد أتلف المركبة قبل ما ترجع الشمس. اشتغلت <b class="num">' + Math.round(b.uptimePct) + '%</b> من الوقت قبل ما تنتهي.</div>';
+    h += '<p class="note" style="margin:8px 0 0">' + (d ? (d.startH === 0 ? 'الموقع كان <b>بالظلمة لحظة الهبوط</b>' : 'أول ظلمة بلّشت <b>بعد ' + dur(d.startH) + '</b> من الهبوط') + '، وطولها <b>' + dur(d.durH) + (d.toEnd ? ' (لآخر المهمة)' : '') + '</b>. البطارية بتكفي ' + dur(usableH) + ' شغل بالظلمة.' : 'الشمس ما غابت ولا مرة خلال المهمة.') + '</p>';
+    if (!b.ok) {
+      const fx = [];
+      if (rep.needCap) fx.push('بطارية ≥ <b class="num">' + fmtWh(rep.needCap) + '</b> عشان ما تنام أبداً');
+      if (rep.needArea) fx.push('أو ألواح ≥ <b class="num">' + rep.needArea + ' m²</b>');
+      else fx.push('(الألواح لحالها ما بتحل الظلمة)');
+      if (rep.maxSleepW != null) fx.push('أو وضع نوم ≤ <b class="num">' + (rep.maxSleepW < 1 ? '1' : rep.maxSleepW) + ' W</b> عشان تضل عايشة لحد ما ترجع الشمس');
+      if (!L.hibernate) fx.push('أو مركبة مصممة تنام وتصحى');
+      h += '<p class="note" style="margin:4px 0 0">الحلول الممكنة: ' + fx.join('، ') + '.</p>';
     }
     return h;
   }
+  const STATE_LEGEND = '<div class="legend" style="margin:10px 0 4px"><span><i style="background:var(--gold)"></i>شغّالة</span><span><i style="background:#8a6a8f"></i>نايمة</span><span><i style="background:var(--risky)"></i>انتهت</span><span><i style="background:rgba(214,164,81,.45)"></i>شمس</span><span><i style="background:var(--earth)"></i>اتصال</span></div>';
 
   // ------------------------------------------------------------------ router
   const VIEWS = ['home', 'explore', 'planner', 'compare', 'ice', 'about'];
@@ -513,20 +530,23 @@
         '<label class="fld"><span>الاستهلاك (W)</span><input type="number" class="inp" id="bxLoad" value="' + L.loadW + '"></label>' +
         '<label class="fld"><span>الألواح (m²)</span><input type="number" class="inp" id="bxArea" value="' + L.panel.area + '"></label>' +
         '<label class="fld"><span>مدة المهمة (يوم)</span><input type="number" class="inp" id="bxDays" value="' + $('pDays').value + '"></label>' +
-        '<div style="display:flex;align-items:flex-end"><button class="btn gold" id="bxRun" style="width:100%">احسب</button></div></div><div id="bxOut" style="margin-top:12px"></div>';
+        '<div style="display:flex;align-items:flex-end"><button class="btn gold" id="bxRun" style="width:100%">احسب</button></div></div>' +
+        '<label class="toggle" style="max-width:420px">المركبة بتقدر تنام بالظلمة وتصحى مع الشمس<input type="checkbox" id="bxHib"' + (L.hibernate ? ' checked' : '') + '><i></i></label><div id="bxOut" style="margin-top:8px"></div>';
       const run = () => {
         $('lCap').value = $('bxCap').value; $('lLoad').value = $('bxLoad').value; $('lArea').value = $('bxArea').value; $('pDays').value = $('bxDays').value; $('pDays').oninput();
+        $('lHib').checked = $('bxHib').checked; $('lHib').onchange();
         const L2 = lander(), days = Math.max(1, +$('bxDays').value || 14), t0 = clampT(Date.parse(isoDate(tNow) + 'T00:00:00Z'));
         const ser = series(sel.model, t0, days * 24, 1), rep = batteryReport(ser, L2, 0, ser.n);
         const a = stats(ser);
-        $('bxOut').innerHTML = batteryHTML(rep, ser, L2, 0) +
+        $('bxOut').innerHTML = batteryHTML(rep, ser, L2) + STATE_LEGEND + '<canvas class="chart" id="bxStates"></canvas>' +
           '<div class="metrics" style="grid-template-columns:repeat(4,1fr); margin-top:10px"><div class="metric"><div class="lab">طاقة داخلة</div><div class="val">' + (rep.b.energyInWh / 1000).toFixed(1) + ' <small>kWh</small></div></div>' +
           '<div class="metric"><div class="lab">طاقة مستهلكة</div><div class="val">' + (rep.b.energyOutWh / 1000).toFixed(1) + ' <small>kWh</small></div></div>' +
           '<div class="metric"><div class="lab">الشمس ظاهرة</div><div class="val">' + pct(a.litPct) + '</div></div><div class="metric"><div class="lab">أطول ظلمة</div><div class="val">' + durNum(a.darkH) + '</div></div></div>' +
           '<div class="muted small" style="margin:12px 0 4px">شحن البطارية من تاريخ الهبوط <span class="num">' + isoDate(t0) + '</span> (التاريخ من شريط الوقت تحت)</div><canvas class="chart" id="bxSoc"></canvas>';
-        Charts.soc($('bxSoc'), [{ soc: rep.b.soc, stepH: 1, t0, color: '#d6a451' }], L2.minSoc, { height: 150 });
+        Charts.states($('bxStates'), ser, rep.b.state, 0);
+        Charts.soc($('bxSoc'), [{ soc: rep.b.soc, state: rep.b.state, stepH: 1, t0, color: '#d6a451' }], L2.minSoc, { height: 150 });
       };
-      $('bxRun').onclick = run; run();
+      $('bxRun').onclick = run; $('bxHib').onchange = run; run();
     }
     function renderIceNear() {
       const [x, y] = Planner.ll2xy(sel.lat, sel.lon);
@@ -610,6 +630,7 @@
       $$('#presetSeg button').forEach((b) => (b.onclick = () => setPreset(b.dataset.p)));
       for (const id of ['lCap', 'lLoad', 'lArea', 'lEff']) $(id).addEventListener('input', () => $$('#presetSeg button').forEach((b) => b.classList.remove('on')));
       $$('#panelSeg button').forEach((b) => (b.onclick = () => { $$('#panelSeg button').forEach((x) => x.classList.toggle('on', x === b)); $('fixedAzBox').classList.toggle('hidden', b.dataset.m !== 'fixed'); }));
+      $('lHib').onchange = () => { $('hibBox').classList.toggle('hidden', !$('lHib').checked); $('hibNote').classList.toggle('hidden', !$('lHib').checked); };
       setPreset('medium');
       $('btnRun').onclick = run;
       $('btnCheck').onclick = check;
@@ -681,7 +702,7 @@
       const L = lander(), windowH = (to - from) / HOUR, missionH = days * 24, total = windowH + missionH;
       const opts = {
         t0: from, windowH, missionH, stepH: total > 2400 ? 3 : total > 1200 ? 2 : 1, startEveryH: windowH > 60 * 24 ? 48 : 24,
-        loadW: L.loadW, capWh: L.capWh, minSoc: L.minSoc, panel: L.panel,
+        loadW: L.loadW, capWh: L.capWh, minSoc: L.minSoc, panel: L.panel, hibernate: L.hibernate, sleepW: L.sleepW, wakeSoc: L.wakeSoc,
         weights: { ice: (+$('wIce').value / 10) * 0.5, comm: (+$('wComm').value / 10) * 0.45, light: (+$('wLit').value / 10) * 0.45, iceMaxKm: +$('mxIce').value },
         maxSlope: +$('mxSlope').value, minM3: $('iceStrong').checked ? 5 : 1, minSepKm: 6,
       };
@@ -705,15 +726,15 @@
     }
     function renderTop() {
       const L = S.lastRank.L;
-      if (!S.top.length) { $('topList').innerHTML = '<div class="callout bad">ما في ولا موقع بينجح بهاي الإعدادات. جرّب بطارية أكبر، أو استهلاك أقل، أو مهمة أقصر، أو نافذة هبوط بالصيف القطبي.</div>'; return; }
+      if (!S.top.length) { $('topList').innerHTML = '<div class="callout bad">ما في ولا موقع بتضل فيه المركبة عايشة لآخر المهمة بهاي الإعدادات. جرّب بطارية أكبر، أو استهلاك أقل، أو مهمة أقصر، أو فعّل «بتقدر تنام وتصحى» مع وضع نوم أقل.</div>'; return; }
       $('topList').innerHTML = S.top.map((r, i) => {
         const ice = r.iceId >= 0 ? S.ice.psr[r.iceId] : null;
         return '<div class="result' + (i === 0 ? ' sel' : '') + '" style="margin-bottom:10px">' +
           '<div class="r-head"><div class="rank">' + (i + 1) + '</div><div style="flex:1"><b>' + esc(placeName(r.lat, r.lon)) + '</b><div class="muted small num" style="text-align:right">' + fmtLL(r.lat, r.lon) + '</div></div>' + tag(r.cls, CLS_AR[r.cls]) + '</div>' +
           '<div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><i style="width:' + r.score.toFixed(0) + '%"></i></div><b class="num">' + r.score.toFixed(0) + '/100</b></div>' +
           '<div class="mini"><div>الهبوط<b>' + isoDate(r.startMs).slice(5) + '</b></div><div>شمس<b>' + pct(r.litPct) + '</b></div><div>اتصال<b>' + pct(r.commPct) + '</b></div>' +
-          '<div>أقل شحن<b>' + Math.round(r.minSoc * 100) + '%</b></div><div>انحدار<b>' + r.slope.toFixed(1) + '°</b></div><div>للجليد<b>' + (r.iceKm < 0.05 ? '0' : r.iceKm.toFixed(1)) + ' km</b></div></div>' +
-          '<div class="note" style="line-height:1.6">أقرب جليد: ' + (ice ? esc(iceName(ice)) + ' (' + ice.m3 + ' رصد)' : '—') + ' · أطول ظلمة خلال المهمة ' + dur(r.longestDarkH) + ' · أطول انقطاع اتصال ' + dur(r.longestNoCommH) + '</div>' +
+          (r.ok ? '<div>أقل شحن<b>' + Math.round(r.minSoc * 100) + '%</b></div>' : '<div>وقت الشغل<b>' + Math.round(r.uptimePct) + '%</b></div>') + '<div>انحدار<b>' + r.slope.toFixed(1) + '°</b></div><div>للجليد<b>' + (r.iceKm < 0.05 ? '0' : r.iceKm.toFixed(1)) + ' km</b></div></div>' +
+          '<div class="note" style="line-height:1.6">' + (r.ok ? 'شغّالة طول المهمة بدون نوم. ' : 'بتنام ' + r.sleeps + ' ' + (r.sleeps === 1 ? 'مرة' : 'مرات') + ' بالظلمة وبتصحى (أطول نوم ' + dur(r.longestSleepH) + '). ') + 'أقرب جليد: ' + (ice ? esc(iceName(ice)) + ' (' + ice.m3 + ' رصد)' : '—') + '. أطول ظلمة ' + dur(r.longestDarkH) + '، وأطول انقطاع اتصال ' + dur(r.longestNoCommH) + '.</div>' +
           '<div class="acts"><button class="btn sm gold" data-act="3d" data-i="' + i + '">افتح ثلاثي الأبعاد</button><button class="btn sm" data-act="chk" data-i="' + i + '">فحص الطاقة</button><button class="btn sm" data-act="cmp" data-i="' + i + '">قارن</button><button class="btn sm" data-act="zoom" data-i="' + i + '">على الخريطة</button></div></div>';
       }).join('') + '<p class="note">الموقع لازم يكون بعيد 6 كم على الأقل عن غيره، عشان تطلعلك 3 خيارات مختلفة فعلاً. العلامة بتجمع: الإضاءة، والاتصال، وهامش البطارية، والانحدار، والقرب من الجليد حسب الأولويات اللي اخترتها.</p>';
       $$('#topList [data-act]').forEach((b) => (b.onclick = () => {
@@ -736,13 +757,14 @@
       else model = await siteModel(s.lat, s.lon);
       const ser = series(model, t0, days * 24, 1), rep = batteryReport(ser, L, 0, ser.n), a = stats(ser);
       const ni = nearestIce(s.lat, s.lon, 1), rose = Planner.panelRose(ser, L.panel);
-      $('checkOut').innerHTML = '<div class="muted small" style="margin-bottom:8px"><b>' + esc(s.name) + '</b> · هبوط <span class="num">' + isoDate(t0) + '</span> · ' + days + ' يوم · بطارية <span class="num">' + L.capWh + ' Wh</span> · استهلاك <span class="num">' + L.loadW + ' W</span> · ألواح <span class="num">' + L.panel.area + ' m²</span></div>' +
-        batteryHTML(rep, ser, L, 0) +
+      $('checkOut').innerHTML = '<div class="muted small" style="margin-bottom:8px;line-height:1.8"><b>' + esc(s.name) + '</b>، هبوط <span class="num">' + isoDate(t0) + '</span> لمدة ' + days + ' يوم. بطارية <span class="ltr">' + fmtWh(L.capWh) + '</span>، استهلاك <span class="ltr">' + L.loadW + ' W</span>، ألواح <span class="ltr">' + L.panel.area + ' m²</span>' + (L.hibernate ? '، بتنام على <span class="ltr">' + L.sleepW + ' W</span>' : '، ما بتنام') + '.</div>' +
+        batteryHTML(rep, ser, L) + STATE_LEGEND + '<canvas class="chart" id="chkStates"></canvas>' +
         '<canvas class="chart" id="chkSoc" style="margin-top:10px"></canvas>' +
         '<div class="metrics" style="margin-top:10px"><div class="metric"><div class="lab">الشمس ظاهرة</div><div class="val">' + pct(a.litPct) + '</div></div><div class="metric"><div class="lab">الأرض ظاهرة</div><div class="val">' + pct(a.commPct) + '</div></div><div class="metric"><div class="lab">أطول ظلمة</div><div class="val">' + durNum(a.darkH) + '</div></div>' +
         '<div class="metric"><div class="lab">طاقة داخلة</div><div class="val">' + (rep.b.energyInWh / 1000).toFixed(1) + ' <small>kWh</small></div></div><div class="metric"><div class="lab">مستهلكة</div><div class="val">' + (rep.b.energyOutWh / 1000).toFixed(1) + ' <small>kWh</small></div></div><div class="metric"><div class="lab">للجليد</div><div class="val">' + (ni ? (ni.km < 0.05 ? '0' : ni.km.toFixed(1)) : '—') + ' <small>km</small></div></div></div>' +
         '<div class="callout info" style="margin-top:10px">☀ <b>اتجاه الألواح بهاي المهمة:</b> إذا الألواح ثابتة، أفضل اتجاه هو السمت <b class="num">' + rose.bestAz + '°</b>، وبيعطي <b class="num">' + Math.round(100 * rose.bestWh / Math.max(1, rose.trackWh)) + '%</b> من طاقة لوح بيلف مع الشمس.' + (L.panel.mode === 'fixed' ? ' (أنت مختار سمت <span class="num">' + L.panel.azimuth + '°</span>.)' : '') + '</div>';
-      Charts.soc($('chkSoc'), [{ soc: rep.b.soc, stepH: 1, t0, color: '#d6a451' }], L.minSoc, { height: 140 });
+      Charts.states($('chkStates'), ser, rep.b.state, 0);
+      Charts.soc($('chkSoc'), [{ soc: rep.b.soc, state: rep.b.state, stepH: 1, t0, color: '#d6a451' }], L.minSoc, { height: 140 });
     }
     return {
       bindForm,
@@ -779,39 +801,133 @@
       return null;
     }
     function coords() { for (const k of ['A', 'B']) { const s = resolve($('cmp' + k).value); $('cmp' + k + 'c').textContent = s ? fmtLL(s.lat, s.lon) : ''; } if (map) map.render(); }
+    // part of a series as its own series (for panelRose over the mission only)
+    function sub(ser, i0, i1) {
+      const o = { n: i1 - i0, stepH: ser.stepH };
+      for (const k of ['t', 'lit', 'comm', 'flux', 'sunAlt', 'sunAz']) if (ser[k]) o[k] = ser[k].subarray ? ser[k].subarray(i0, i1) : ser[k].slice(i0, i1);
+      return o;
+    }
+    // everything we need about one site for one mission
+    function evalSite(model, ser, L, fair, mSteps, windowH) {
+      const st = ser.stepH, gen = Planner.panelPower(ser, L.panel);
+      let i0 = 0;
+      if (fair) { const best = Planner.evaluateMission(ser, gen, Object.assign({ missionH: mSteps * st, windowH, startEveryH: 24 }, L)); if (best) i0 = best.start; }
+      const i1 = i0 + mSteps, rep = batteryReport(ser, L, i0, i1), a = stats(ser, i0, i1);
+      let E = 0; for (let k = i0; k < i1; k++) E += gen[k];
+      const rose = Planner.panelRose(sub(ser, i0, i1), L.panel);
+      const ice = nearestIce(model.lat, model.lon, 1);
+      return { model, ser, gen, i0, i1, rep, b: rep.b, a, meanW: E / mSteps, rose, ice, t0: ser.t[i0] };
+    }
+    const slopeTag = (d) => d == null ? '' : d > 15 ? ' <span class="tag risky">خطر للهبوط</span>' : d > 8 ? ' <span class="tag caution">انتبه</span>' : ' <span class="tag safe">مناسب</span>';
+    function statusCell(x) {
+      const b = x.b;
+      if (b.ok) return '<span class="tag safe">اشتغلت كل المهمة</span>';
+      if (b.alive) return '<span class="tag caution">نامت ' + b.sleeps + ' ' + (b.sleeps === 1 ? 'مرة' : 'مرات') + ' وصحيت</span>';
+      return '<span class="tag risky">انتهت بعد ' + dur(b.deadHour) + '</span>';
+    }
+    function darkCell(x) {
+      const d = x.rep.dark;
+      if (!d) return 'ما في ظلمة';
+      return d.startH === 0 ? 'هبطت بالظلمة' : 'بعد ' + durNum(d.startH);
+    }
+    // weighted score used only when both sites behave the same way for the lander
+    function wscore(x) {
+      const sl = x.model.slope == null ? 10 : x.model.slope, ik = x.ice ? x.ice.km : 30;
+      const batt = x.b.ok ? 0.5 + 0.5 * x.b.minSoc : x.b.alive ? 0.5 * x.b.uptimePct / 100 : 0.25 * x.b.uptimePct / 100;
+      return 100 * (0.25 * x.a.litPct / 100 + 0.2 * x.a.commPct / 100 + 0.15 * Math.max(0, 1 - sl / 15) + 0.2 * Math.max(0, 1 - ik / 15) + 0.2 * batt);
+    }
     async function run() {
       const A = resolve($('cmpA').value), B = resolve($('cmpB').value); if (!A || !B) return;
       $('cmpTable').innerHTML = '<p class="note">جاري الحساب (تحميل التضاريس أول مرة بياخد ثواني)…</p>';
-      const days = +$('cmpDays').value, t0 = clampT(Date.parse($('cmpFrom').value + 'T00:00:00Z')), hours = Math.min(days * 24, Math.floor((S.range[1] - t0) / HOUR) - 1), st = days > 90 ? 2 : 1;
-      const L = lander();
+      await new Promise((r) => setTimeout(r, 30));
+      const days = +$('cmpDays').value, fair = $('cmpFair').value === 'best', st = days > 90 ? 2 : 1;
+      const tFrom = clampT(Date.parse($('cmpFrom').value + 'T00:00:00Z')), availH = Math.floor((S.range[1] - tFrom) / HOUR) - 2;
+      const missionH = Math.min(days * 24, availH), windowH = fair ? Math.max(0, Math.min(30 * 24, availH - missionH)) : 0;
+      const mSteps = Math.max(1, Math.floor(missionH / st)), L = lander();
       const [mA, mB] = [await siteModel(A.lat, A.lon), await siteModel(B.lat, B.lon)];
-      const sA = series(mA, t0, hours, st), sB = series(mB, t0, hours, st);
-      const aA = stats(sA), aB = stats(sB), bA = batteryReport(sA, L, 0, sA.n), bB = batteryReport(sB, L, 0, sB.n);
-      const iA = nearestIce(A.lat, A.lon, 1), iB = nearestIce(B.lat, B.lon, 1);
-      const rA = Planner.panelRose(sA, L.panel), rB = Planner.panelRose(sB, L.panel);
-      const rows = [
-        ['الارتفاع', Math.round(mA.h) + ' m', Math.round(mB.h) + ' m', 0],
-        ['الانحدار', mA.slope != null ? mA.slope.toFixed(1) + '°' : '—', mB.slope != null ? mB.slope.toFixed(1) + '°' : '—', mA.slope != null && mB.slope != null ? Math.sign(mB.slope - mA.slope) : 0],
-        ['الشمس ظاهرة', pct(aA.litPct), pct(aB.litPct), Math.sign(aA.litPct - aB.litPct)],
-        ['أطول ظلمة', dur(aA.darkH), dur(aB.darkH), Math.sign(aB.darkH - aA.darkH)],
-        ['متوسط الطاقة (لوح 1 م²)', Math.round(aA.meanW) + ' W', Math.round(aB.meanW) + ' W', Math.sign(aA.meanW - aB.meanW)],
-        ['الأرض ظاهرة (اتصال)', pct(aA.commPct), pct(aB.commPct), Math.sign(aA.commPct - aB.commPct)],
-        ['أطول انقطاع اتصال', dur(aA.gapH), dur(aB.gapH), Math.sign(aB.gapH - aA.gapH)],
-        ['شمس وأرض معاً', pct(aA.bothPct), pct(aB.bothPct), Math.sign(aA.bothPct - aB.bothPct)],
-        ['البطارية (' + L.capWh + ' Wh، ' + L.loadW + ' W)', bA.b.ok ? '✔ أقل شحن ' + Math.round(bA.b.minSoc * 100) + '%' : '✘ بتفضى بعد ' + dur(bA.b.failHour), bB.b.ok ? '✔ أقل شحن ' + Math.round(bB.b.minSoc * 100) + '%' : '✘ بتفضى بعد ' + dur(bB.b.failHour),
-          Math.sign((bA.b.ok ? 1 + bA.b.minSoc : bA.b.failHour / 1e5) - (bB.b.ok ? 1 + bB.b.minSoc : bB.b.failHour / 1e5))],
-        ['أفضل اتجاه للوح ثابت', rA.bestAz + '° (' + Math.round(100 * rA.bestWh / Math.max(1, rA.trackWh)) + '%)', rB.bestAz + '° (' + Math.round(100 * rB.bestWh / Math.max(1, rB.trackWh)) + '%)', Math.sign(rA.bestWh / Math.max(1, rA.trackWh) - rB.bestWh / Math.max(1, rB.trackWh))],
-        ['أقرب جليد مرصود', iA ? (iA.km < 0.05 ? 'داخله' : iA.km.toFixed(1) + ' km') : '—', iB ? (iB.km < 0.05 ? 'داخله' : iB.km.toFixed(1) + ' km') : '—', iA && iB ? Math.sign(iB.km - iA.km) : 0],
+      const sA = series(mA, tFrom, missionH + windowH + st, st), sB = series(mB, tFrom, missionH + windowH + st, st);
+      const X = evalSite(mA, sA, L, fair, mSteps, windowH), Y = evalSite(mB, sB, L, fair, mSteps, windowH);
+
+      // ---- rows: [label, A html, B html, winner (+1 A, -1 B, 0 none)]
+      const better = (va, vb, tol, lowerWins) => { const d = (lowerWins ? vb - va : va - vb); return Math.abs(d) < tol ? 0 : Math.sign(d); };
+      const lander_ok = (x) => x.b.alive;
+      const ltr = (t) => '<span class="ltr">' + t + '</span>';
+      const P = (v) => '<span class="num">' + Math.round(v) + '%</span>';
+      const iceTxt = (x) => !x.ice ? '—' : x.ice.km < 0.05 ? 'داخل منطقة جليد' : '<span class="num">' + x.ice.km.toFixed(1) + ' km</span>';
+      const needTxt = (x) => x.b.ok ? '<span class="muted">بطاريتك بتكفي</span>' : '<span class="num">' + fmtWh(Math.ceil(x.b.neededCapWh / 100) * 100) + '</span>';
+      const groups = [
+        ['التضاريس', [
+          ['الارتفاع', '<span class="num">' + Math.round(mA.h) + ' m</span>', '<span class="num">' + Math.round(mB.h) + ' m</span>', 0],
+          ['الانحدار', (mA.slope != null ? '<span class="num">' + mA.slope.toFixed(1) + '°</span>' : '—') + slopeTag(mA.slope), (mB.slope != null ? '<span class="num">' + mB.slope.toFixed(1) + '°</span>' : '—') + slopeTag(mB.slope),
+            mA.slope != null && mB.slope != null ? better(mA.slope, mB.slope, 1, true) : 0],
+        ]],
+        ['الشمس والطاقة', [
+          ['الشمس ظاهرة', P(X.a.litPct), P(Y.a.litPct), better(X.a.litPct, Y.a.litPct, 2)],
+          ['أول ظلمة بعد الهبوط', darkCell(X), darkCell(Y), better(X.rep.dark ? X.rep.dark.startH : 1e9, Y.rep.dark ? Y.rep.dark.startH : 1e9, 12)],
+          ['أطول ظلمة', durNum(X.a.darkH), durNum(Y.a.darkH), better(X.a.darkH, Y.a.darkH, 6, true)],
+          ['متوسط إنتاج ألواحك (' + ltr(L.panel.area + ' m² · ' + Math.round(L.panel.efficiency * 100) + '%') + ')', '<span class="num">' + Math.round(X.meanW) + ' W</span>', '<span class="num">' + Math.round(Y.meanW) + ' W</span>', better(X.meanW, Y.meanW, Math.max(2, 0.03 * Math.max(X.meanW, Y.meanW)))],
+          ['أفضل اتجاه للوح ثابت', '<span class="num">' + X.rose.bestAz + '°</span>', '<span class="num">' + Y.rose.bestAz + '°</span>', 0],
+        ]],
+        ['الاتصال مع الأرض', [
+          ['الأرض ظاهرة', P(X.a.commPct), P(Y.a.commPct), better(X.a.commPct, Y.a.commPct, 2)],
+          ['أطول انقطاع', durNum(X.a.gapH), durNum(Y.a.gapH), better(X.a.gapH, Y.a.gapH, 6, true)],
+        ]],
+        ['المركبة (' + ltr(fmtWh(L.capWh) + ' · ' + L.loadW + ' W') + ')', [
+          ['حالة المركبة', statusCell(X), statusCell(Y), 0],
+          ['وقت الشغل من المهمة', P(X.b.uptimePct), P(Y.b.uptimePct), better(X.b.uptimePct, Y.b.uptimePct, 1)],
+          ['بطارية لازمة عشان ما تنام', needTxt(X), needTxt(Y), better(X.b.neededCapWh, Y.b.neededCapWh, 0.05 * Math.max(X.b.neededCapWh, Y.b.neededCapWh, 100), true)],
+        ]],
+        ['الجليد', [
+          ['أقرب جليد مرصود', iceTxt(X), iceTxt(Y), X.ice && Y.ice ? better(X.ice.km, Y.ice.km, 0.3, true) : 0],
+        ]],
       ];
-      let wa = 0, wb = 0; rows.forEach((r) => { if (r[3] > 0) wa++; if (r[3] < 0) wb++; });
-      $('cmpTable').innerHTML = '<table class="tbl cmp"><tr><th>المعيار</th><th><span class="badge" style="display:inline-grid;width:22px;height:22px;border-radius:7px;background:var(--gold);color:#1d1408;place-items:center">A</span> ' + esc(A.name) + '</th><th><span class="badge" style="display:inline-grid;width:22px;height:22px;border-radius:7px;background:var(--earth);color:#0b1a2a;place-items:center">B</span> ' + esc(B.name) + '</th></tr>' +
-        rows.map((r) => '<tr><td>' + r[0] + '</td><td class="num' + (r[3] > 0 ? ' win' : '') + '">' + r[1] + '</td><td class="num' + (r[3] < 0 ? ' win' : '') + '">' + r[2] + '</td></tr>').join('') + '</table>' +
-        '<div class="callout ' + (wa === wb ? 'info' : 'ok') + '" style="margin-top:12px">' + (wa === wb ? 'الموقعين متعادلين: ' + wa + ' معايير لكل واحد.' : '<b>' + esc(wa > wb ? A.name : B.name) + '</b> أفضل بـ <b class="num">' + Math.max(wa, wb) + '</b> معايير من أصل ' + rows.length + '.') +
-        ' <span class="muted">الفترة <span class="num">' + isoDate(t0) + '</span> لمدة ' + days + ' يوم.</span></div>';
+      // no gold on a lander row for a site where the lander is lost
+      groups[3][1].forEach((r) => { if ((r[3] > 0 && !lander_ok(X)) || (r[3] < 0 && !lander_ok(Y))) r[3] = 0; });
+
+      // ---- verdict: survival first, then sleeping / uptime, then weighted score
+      const nameA = esc(A.name), nameB = esc(B.name), slopeWarn = (m, n) => m.slope != null && m.slope > 15 ? ' <b>بس انتبه:</b> انحدار ' + n + ' <span class="num">' + m.slope.toFixed(1) + '°</span> أعلى من الحد الآمن للهبوط (15°).' : '';
+      const wa = wscore(X), wb = wscore(Y);
+      let cls = 'ok', msg;
+      if (X.b.alive !== Y.b.alive) {
+        const [w, l, wn, ln, wm] = X.b.alive ? [X, Y, nameA, nameB, mA] : [Y, X, nameB, nameA, mB];
+        msg = '<b>' + wn + ' أفضل للمهمة.</b> المركبة بتضل عايشة فيه لآخر المهمة' + (w.b.ok ? ' وبتشتغل طول الوقت' : ' (بتنام ' + w.b.sleeps + ' ' + (w.b.sleeps === 1 ? 'مرة' : 'مرات') + ' وبتصحى، وشغالة ' + P(w.b.uptimePct) + ' من الوقت)') + '، أما بـ' + ln + ' بتنتهي بعد ' + dur(l.b.deadHour) + '.' + slopeWarn(wm, wn);
+      } else if (!X.b.alive) {
+        cls = 'bad';
+        const longer = X.b.deadHour === Y.b.deadHour ? null : X.b.deadHour > Y.b.deadHour ? [nameA, X] : [nameB, Y];
+        msg = '<b>ولا موقع بتنجح فيه المهمة بهاي المركبة.</b> بـ' + nameA + ' بتنتهي بعد ' + dur(X.b.deadHour) + '، وبـ' + nameB + ' بعد ' + dur(Y.b.deadHour) + (longer ? '، يعني ' + longer[0] + ' بيصمد أطول' : '') + '.' +
+          ' عشان تنجح: بطارية حوالي <span class="ltr">' + fmtWh(Math.ceil(X.b.neededCapWh / 100) * 100) + '</span> لـ A أو <span class="ltr">' + fmtWh(Math.ceil(Y.b.neededCapWh / 100) * 100) + '</span> لـ B، ' + (L.hibernate ? 'أو وضع نوم أقل استهلاكاً.' : 'أو فعّل «المركبة بتقدر تنام وتصحى» من إعدادات المركبة بالمخطط.');
+      } else if (X.b.ok !== Y.b.ok) {
+        const [w, l, wn, ln, wm] = X.b.ok ? [X, Y, nameA, nameB, mA] : [Y, X, nameB, nameA, mB];
+        msg = '<b>' + wn + ' أفضل للمهمة.</b> المركبة بتشتغل فيه كل المهمة بدون ما تنام، أما بـ' + ln + ' بتنام ' + l.b.sleeps + ' ' + (l.b.sleeps === 1 ? 'مرة' : 'مرات') + ' وبتشتغل ' + P(l.b.uptimePct) + ' بس من الوقت.' + slopeWarn(wm, wn);
+      } else if (Math.abs(X.b.uptimePct - Y.b.uptimePct) >= 5) {
+        const [w, l, wn, ln, wm] = X.b.uptimePct > Y.b.uptimePct ? [X, Y, nameA, nameB, mA] : [Y, X, nameB, nameA, mB];
+        cls = 'warn';
+        msg = '<b>' + wn + ' أفضل للمهمة.</b> بالموقعين المركبة بتنام بالظلمة وبتصحى، بس بـ' + wn + ' بتشتغل ' + P(w.b.uptimePct) + ' من الوقت مقابل ' + P(l.b.uptimePct) + ' بـ' + ln + '.' + slopeWarn(wm, wn);
+      } else if (Math.abs(wa - wb) < 2) {
+        cls = 'info';
+        msg = '<b>الموقعين متقاربين جداً.</b> المركبة بتتصرف بنفس الطريقة بالاثنين، والعلامة الكلية متقاربة (<span class="num">' + Math.round(wa) + '</span> مقابل <span class="num">' + Math.round(wb) + '</span>). اختار حسب الإشي الأهم لمهمتك:';
+      } else {
+        const [wn, m, hi, lo] = wa > wb ? [nameA, mA, wa, wb] : [nameB, mB, wb, wa];
+        msg = '<b>' + wn + ' أفضل.</b> المركبة بتتصرف بنفس الطريقة بالموقعين، فالحسم كان بالعلامة الكلية (الشمس والاتصال والانحدار والجليد): <span class="num">' + Math.round(hi) + '</span> مقابل <span class="num">' + Math.round(lo) + '</span> من 100.' + slopeWarn(m, wn);
+      }
+      const short = (t) => t.replace(/<[^>]+>/g, '').replace(/\s*\(.*\)\s*$/, '');
+      const wins = (sg) => groups.flatMap(([, rows]) => rows.filter((r) => r[3] === sg).map((r) => short(r[0])));
+      const wA = wins(1), wB = wins(-1);
+      if (wA.length || wB.length) msg += '<div class="small" style="margin-top:8px;line-height:1.9">' + (wA.length ? '<b style="color:var(--gold2)">A</b> أحسن بـ: ' + wA.join('، ') + '.' : '') + (wA.length && wB.length ? '<br>' : '') + (wB.length ? '<b style="color:var(--earth)">B</b> أحسن بـ: ' + wB.join('، ') + '.' : '') + '</div>';
+      const when = fair
+        ? 'كل موقع انحسب بأفضل يوم هبوط خلال شهر من <span class="num">' + isoDate(tFrom) + '</span>: هبوط A <span class="num">' + isoDate(X.t0) + '</span>، وهبوط B <span class="num">' + isoDate(Y.t0) + '</span>. مدة المهمة ' + Math.round(missionH / 24) + ' يوم.'
+        : 'الموقعين بنفس يوم الهبوط <span class="num">' + isoDate(tFrom) + '</span> لمدة ' + Math.round(missionH / 24) + ' يوم.';
+      const head = (k, n) => '<span class="badge" style="display:inline-grid;width:22px;height:22px;border-radius:7px;background:' + (k === 'A' ? 'var(--gold);color:#1d1408' : 'var(--earth);color:#0b1a2a') + ';place-items:center;font-size:12px;font-weight:700">' + k + '</span> ' + n;
+      $('cmpTable').innerHTML =
+        '<div class="callout ' + cls + '" style="margin-bottom:12px">' + msg + '</div>' +
+        '<table class="tbl cmp"><tr><th>المعيار</th><th>' + head('A', nameA) + '</th><th>' + head('B', nameB) + '</th></tr>' +
+        groups.map(([g, rows]) => '<tr class="grp"><td colspan="3">' + g + '</td></tr>' +
+          rows.map((r) => '<tr><td>' + r[0] + '</td><td' + (r[3] > 0 ? ' class="win"' : '') + '>' + r[1] + '</td><td' + (r[3] < 0 ? ' class="win"' : '') + '>' + r[2] + '</td></tr>').join('')).join('') +
+        '</table><p class="note" style="margin-top:10px">' + when + ' الذهبي يعني الأفضل بهذا المعيار. القرار بيمشي بالترتيب: هل المركبة بتضل عايشة؟ هل بتنام؟ كم بتشتغل من الوقت؟ وبعدها العلامة الكلية.</p>';
       $('cmpCharts').classList.remove('hidden');
       Charts.horizon($('cmpHz'), mA.elev, null, null, { second: mB.elev, height: 170 });
-      Charts.soc($('cmpSoc'), [{ soc: bA.b.soc, stepH: st, t0, color: '#d6a451' }, { soc: bB.b.soc, stepH: st, t0, color: '#6fa8dc' }], L.minSoc, { height: 150 });
-      Charts.timeline($('cmpTlA'), sA, { height: 130 }); Charts.timeline($('cmpTlB'), sB, { height: 130 });
+      Charts.soc($('cmpSoc'), [{ soc: X.b.soc, stepH: st, t0: X.t0, color: '#d6a451' }, { soc: Y.b.soc, stepH: st, t0: Y.t0, color: '#6fa8dc' }], L.minSoc, { height: 150, relative: fair });
+      Charts.states($('cmpTlA'), sA, X.b.state, X.i0); Charts.states($('cmpTlB'), sB, Y.b.state, Y.i0);
     }
     async function initMap() {
       await loadGrid();
@@ -913,8 +1029,8 @@
         ['الإضاءة وخط الأفق', 'لكل نقطة بنرمي 720 شعاع حواليها (كل نص درجة) لمسافة 300 كم، وبنحسب أعلى زاوية للجبال باتجاه كل شعاع، مع انحناء القمر. الشمس قرص قطره نص درجة تقريباً، فبنحسب <b>جزء القرص الظاهر</b> فوق الجبال، مش بس مركزه. هيك بتطلع الإضاءة الجزئية لما الشمس بتلمس قمة جبل.'],
         ['الاتصال مع الأرض', 'الاتصال المباشر ممكن لما يكون <b>مركز الأرض فوق خط الأفق الحقيقي</b> من الموقع، وبنحسب موقع الأرض من نفس النقطة على السطح (مش من مركز القمر). هاي هندسة بس: ما بنحسب قوة الإشارة ولا جدول محطات الاستقبال على الأرض.'],
         ['الطاقة واتجاه الألواح', 'الشمس بالقطب واطية جداً (أقل من 2° فوق الأفق)، فاللوح الأنسب يكون <b>عمودي</b>. الطاقة = 1361 W/m² × (1 AU / المسافة)² × الكفاءة × المساحة × جزء القرص الظاهر × جيب تمام ارتفاع الشمس. للوح الثابت بنضرب كمان بجيب تمام الفرق بين اتجاه الشمس واتجاه اللوح، وبنجرب 72 اتجاه عشان نلاقي الأفضل.'],
-        ['البطارية', 'محاكاة ساعة بساعة: الطاقة الداخلة من الألواح ناقص الاستهلاك، والبطارية بتبدأ مليانة وما بتتعدى سعتها. المهمة بتفشل إذا نزل الشحن تحت الحد اللي اخترته. وإذا فشلت، بنحسب أصغر بطارية بتنجّحها، وأصغر مساحة ألواح (إذا في وحدة بتنفع).'],
-        ['اختيار أفضل 3 مواقع', 'حسبنا مسبقاً خط الأفق لـ <b>11,844</b> نقطة على شبكة كل 2 كم حوالين القطب (انحدارها ≤ 15° وإضاءتها على المدى الطويل ≥ 20%). بتشغيل المخطط، كل نقطة بتنجرب بكل يوم هبوط بالنافذة. الشرط الأساسي إنه البطارية تكفي كل المهمة، وبعدها العلامة بتجمع: الإضاءة، والاتصال، وهامش البطارية، والانحدار، والقرب من الجليد حسب الأولويات. وبنختار 3 مواقع بينهم 6 كم على الأقل.'],
+        ['البطارية والنوم', 'محاكاة ساعة بساعة: الطاقة الداخلة من الألواح ناقص الاستهلاك، والبطارية بتبدأ مليانة وما بتتعدى سعتها. المركبة إلها 3 حالات: <b>شغّالة</b>، و<b>نايمة</b> (إذا نزل الشحن تحت الحد بتطفي كل إشي إلا السخانات وبتستنى الشمس، وبتصحى لما الشحن يرجع للمستوى اللي اخترته)، و<b>انتهت</b> (إذا البطارية فضيت وهي نايمة، السخانات بتطفي والبرد بيتلف الإلكترونيات؛ والمركبة اللي مش مصممة تنام بتنتهي أول ما ينزل الشحن تحت الحد). هيك بتعرف إذا الموقع بيخلي المركبة تعيش، وكم من الوقت بتشتغل، وكم بطارية بتلزمها عشان ما تنام أبداً.'],
+        ['اختيار أفضل 3 مواقع', 'حسبنا مسبقاً خط الأفق لـ <b>11,844</b> نقطة على شبكة كل 2 كم حوالين القطب (انحدارها ≤ 15° وإضاءتها على المدى الطويل ≥ 20%). بتشغيل المخطط، كل نقطة بتنجرب بكل يوم هبوط بالنافذة. الشرط الأساسي إنه المركبة تضل عايشة لآخر المهمة (والأفضل اللي ما بتنام أبداً، وبعدها الأكثر وقت شغل)، وبعدها العلامة بتجمع: الإضاءة، والاتصال، وهامش البطارية، والانحدار، والقرب من الجليد حسب الأولويات. وبنختار 3 مواقع بينهم 6 كم على الأقل.'],
         ['حدود الدقة (بصراحة)', '<ul><li>الشبكة كل 2 كم، فالقمم الصغيرة جداً ممكن تفوتنا. افتح أي موقع بالمستكشف لحساب دقيق على 80 م.</li><li>الانحدار على مسافة 160 م، يعني ما بيشوف الصخور الصغيرة والحفر. هاي بدها صور LROC NAC بدقة متر.</li><li>الإضاءة على ارتفاع 2 م فوق السطح. البرج الأعلى بيشوف شمس أكثر.</li><li>نموذج تعليمي وبحثي، مش بديل عن التحليل الهندسي الرسمي.</li></ul>'],
         ['تنزيل البيانات (للطلاب والباحثين)', '<ul><li><a href="data/grid/grid.json" target="_blank">خرائط القطب كل 1 كم</a>: الإضاءة، ورؤية الأرض، والظل الدائم، والانحدار، وأطول ظلمة (ملفات .bin، والشرح جوا grid.json).</li><li><a href="data/grid/cand.json" target="_blank">نقاط الهبوط المرشحة</a> مع خط الأفق لكل نقطة (cand_masks.gz).</li><li><a href="data/ice/psr_ice.json" target="_blank">مناطق الجليد</a> (CC BY 4.0، Lemelin وزملاؤه 2021).</li><li><a href="data/rocks/south_pole_rock_mix.csv" download>نسب الصخور (CSV)</a>.</li><li>الكود كامل على <a href="https://github.com/aldiqs70/nasa" target="_blank">GitHub</a>.</li></ul>'],
       ];
