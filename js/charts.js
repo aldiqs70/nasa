@@ -115,7 +115,7 @@
   function states(cv, ser, state, i0, opts) {
     opts = opts || {};
     const { g, W, H } = setup(cv, opts.height || 74), n = state.length; if (!n) return;
-    const X = (i) => (i / n) * W, bw = Math.max(1, W / n + 0.6);
+    const X = (i) => Math.floor((i / n) * W), bw = Math.max(1, Math.ceil(W / n) + 1);
     const rows = [[4, 12], [20, 12], [38, 18]];
     g.fillStyle = 'rgba(194,184,200,0.06)'; for (const [y, h] of rows) g.fillRect(0, y, W, h);
     for (let i = 0; i < n; i++) {

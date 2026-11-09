@@ -13,6 +13,7 @@
   // always load the newest files after an update (avoid stale browser cache)
   window.__v = Date.now();
   document.write('<link rel="stylesheet" href="css/app.css?v=' + window.__v + '">');
+  document.write('<script src="js/i18n.js?v=' + window.__v + '"><\/script>');
 </script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
@@ -33,6 +34,7 @@
     <a href="#about" data-v="about">المنهجية والمصادر</a>
   </nav>
   <div class="spacer"></div>
+  <button class="lang-btn" id="langBtn" type="button" onclick="I18N.toggle()">English</button>
   <a class="pill-btn" href="#planner"><span class="dot"></span>خطّط مهمتك</a>
   <button class="menu-btn" id="menuBtn" aria-label="القائمة"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#efe9f3" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
 </header>
@@ -291,7 +293,7 @@
         </div>
         <div class="card pad">
           <div class="legend"><span><i style="background:var(--safe)"></i>مناسب <b class="num" id="cSafe"></b></span><span><i style="background:var(--caution)"></i>بحذر <b class="num" id="cCaution"></b></span><span><i style="background:var(--risky)"></i>غير مناسب <b class="num" id="cRisky"></b></span><span><i style="background:var(--ice)"></i>جليد</span><span><i style="background:var(--gold)"></i>أفضل 3</span></div>
-          <p class="note" style="margin:8px 0 0"><b>مناسب</b>: البطارية بتكفي كل المهمة وبيضل فيها 30% على الأقل، والانحدار ≤ 8°، والأرض ظاهرة ≥ 40% من الوقت. <b>بحذر</b>: البطارية بتكفي بس بهامش أقل، أو الانحدار أعلى. <b>غير مناسب</b>: البطارية بتفضى قبل نهاية المهمة بكل أيام النافذة. اضغط على الخريطة عشان تفحص أي نقطة.</p>
+          <p class="note" style="margin:8px 0 0"><b>مناسب</b>: المركبة بتشتغل كل المهمة بدون ما تنام وبيضل فيها 30% شحن على الأقل، والانحدار ≤ 8°، والأرض ظاهرة ≥ 40% من الوقت. <b>بحذر</b>: المركبة بتعيش لآخر المهمة بس بهامش أقل، أو بتنام بالظلمة وبتصحى، أو الانحدار أعلى. <b>غير مناسب</b>: المركبة بتنتهي قبل آخر المهمة بكل أيام النافذة. اضغط على الخريطة عشان تفحص أي نقطة.</p>
         </div>
       </div>
 
@@ -320,7 +322,7 @@
       <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
         <label class="fld"><span>بداية الفترة</span><input type="date" class="inp" id="cmpFrom" style="width:170px"></label>
         <label class="fld"><span>مدة المهمة</span><select class="inp" id="cmpDays" style="width:140px"><option value="14">14 يوم</option><option value="30" selected>30 يوم</option><option value="90">90 يوم</option><option value="365">سنة</option></select></label>
-        <label class="fld"><span>يوم الهبوط</span><select class="inp" id="cmpFair" style="width:230px"><option value="best" selected>كل موقع بأفضل يوم (خلال شهر)</option><option value="same">نفس التاريخ للموقعين</option></select></label>
+        <label class="fld"><span>يوم الهبوط</span><select class="inp" id="cmpFair" style="width:260px"><option value="best" selected>كل موقع بأفضل يوم (خلال شهر)</option><option value="same">نفس التاريخ للموقعين</option></select></label>
         <button class="btn gold" id="btnCmp">قارن</button>
       </div>
     </div>
@@ -391,6 +393,7 @@
 
 <script>
   (function () {
+    if (window.I18N) window.I18N.apply(document.body);
     var v = window.__v;
     ['config.js', 'js/sunearth.js', 'js/terrain.js', 'js/sites.js', 'js/rocks.js', 'js/planner.js', 'js/sky.js', 'js/polarmap.js', 'js/charts.js', 'js/app.js']
       .forEach(function (f) { document.write('<script src="' + f + '?v=' + v + '"><\/script>'); });

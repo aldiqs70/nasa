@@ -8,41 +8,59 @@
     {
       id: 'shackleton-rim-b', name: 'Shackleton Rim B', lat: -89.5244, lon: 56.30993,
       terrain: 'تضاريس مرتفعات وحافة فوهة قرب القطب',
+      terrain_en: 'Highland terrain and a crater rim near the pole',
+      rock_en: 'Anorthosite-rich highland material is the regional expectation; the exact local composition needs checking against geological maps.',
+      landing_en: 'A candidate for detailed terrain and illumination analysis.',
       rock: 'مواد المرتفعات الغنية بالأنورثوسيت (Anorthosite) هي التوقّع الإقليمي، والتركيب المحلي الدقيق يحتاج تحقق من الخرائط الجيولوجية.',
       landing: 'مرشّح لتحليل مفصّل للتضاريس والإضاءة.',
     },
     {
       id: 'shoemaker-rim-a', name: 'Shoemaker Rim A', lat: -88.0792, lon: 11.88866,
       terrain: 'حافة فوهة صدمية',
+      terrain_en: 'Impact crater rim',
+      rock_en: 'Highland crust material and possible impact breccia. No sample-based composition is available.',
+      landing_en: 'Check slope, boulders and closeness to permanently shadowed areas.',
       rock: 'مواد قشرة المرتفعات وبريشيا صدمية (Breccia) محتملة. لا يوجد تركيب محدد لعيّنات.',
       landing: 'افحص الانحدار والصخور والقرب من المناطق المظللة دائماً.',
     },
     {
       id: 'de-gerlache-rim-1', name: 'de Gerlache Rim 1', lat: -88.6834, lon: -67.9321,
       terrain: 'حافة فوهة قطبية',
+      terrain_en: 'Polar crater rim',
+      rock_en: 'Highland and impact-modified material expected; local rocks need verification.',
+      landing_en: 'Assess the lit areas and the local slope.',
       rock: 'مواد مرتفعات ومواد معدّلة بالصدمات متوقعة، والصخور المحلية تحتاج تحقق.',
       landing: 'قيّم المناطق المضاءة والانحدار المحلي.',
     },
     {
       id: 'malapert-massif', name: 'Malapert Massif', lat: -85.9948, lon: -0.23578,
       terrain: 'كتلة جبلية مرتفعة (Massif)',
+      terrain_en: 'Elevated mountain massif',
+      rock_en: 'Anorthosite-rich highland crust is a reasonable regional assumption.',
+      landing_en: 'Worth studying for surface stability and sun exposure.',
       rock: 'قشرة مرتفعات غنية بالأنورثوسيت فرضية إقليمية معقولة.',
       landing: 'يستحق الدراسة من ناحية ثبات السطح والتعرض للشمس.',
     },
     {
       id: 'leibnitz-beta', name: 'Leibnitz Beta Plateau', lat: -85.4266, lon: 31.74276,
       terrain: 'هضبة مرتفعة',
+      terrain_en: 'Elevated plateau',
+      rock_en: 'Highland crust material expected; the mineral composition needs confirmation from orbital data.',
+      landing_en: 'A useful comparison site against the polar crater-rim sites.',
       rock: 'مواد قشرة المرتفعات متوقعة، والتركيب المعدني يحتاج تأكيد من بيانات المدار.',
       landing: 'موقع مفيد للمقارنة مع مواقع حواف الفوهات القطبية.',
     },
     {
       id: 'haworth', name: 'Haworth', lat: -86.7639, lon: -22.777,
       terrain: 'منطقة فوهة صدمية',
+      terrain_en: 'Impact crater area',
+      rock_en: 'Highland material and impact ejecta; the exact rock distribution needs verification.',
+      landing_en: 'Study shadowing, slope and surface roughness.',
       rock: 'مواد مرتفعات ومقذوفات صدمية (Ejecta)، وتوزيع الصخور الدقيق يحتاج تحقق.',
       landing: 'ادرس الظل والانحدار وخشونة السطح.',
     },
   ];
-  for (const s of SITES) s.confidence = 'سياق جيولوجي إقليمي فقط';
+  for (const s of SITES) { s.confidence = 'سياق جيولوجي إقليمي فقط'; s.confidence_en = 'Regional geological context only'; }
 
   const ROCKS = [
     { name: 'Anorthosite', ar: 'الأنورثوسيت', color: '#e9e4d6',

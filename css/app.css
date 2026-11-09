@@ -321,3 +321,14 @@ td.win .num { color: var(--gold2); }
   #view-explore .time-pill input[type=range] { width: 90px; }
   .time-pill { gap: 8px; }
 }
+
+/* ---------------- language ---------------- */
+.lang-btn { height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line2); background: rgba(194, 184, 200, 0.06); color: var(--text); cursor: pointer; font-weight: 600; font-size: 13px; white-space: nowrap; margin-inline-end: 10px; }
+.lang-btn:hover { border-color: rgba(214, 164, 81, 0.6); color: var(--gold2); }
+.lang-btn[lang=ar] { font-family: 'IBM Plex Sans Arabic', sans-serif; }
+.lang-btn[lang=en] { font-family: var(--num); }
+html[lang=en] { --font: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+html[dir=ltr] input[type=date].inp, html[dir=ltr] input[type=number].inp { text-align: left; }
+html[dir=ltr] .kv dd { text-align: right; }
+html[dir=ltr] .metric .val, html[dir=ltr] .stat-big, html[dir=ltr] .result .mini b { text-align: left; }
+html[dir=ltr] [style*="text-align:right"] { text-align: left !important; }
