@@ -8,12 +8,13 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%231f1b24'/%3E%3Cpath d='M20 5a12 12 0 1 0 0 22A10 10 0 1 1 20 5z' fill='%23d6a451'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script>
   // always load the newest files after an update (avoid stale browser cache)
   window.__v = Date.now();
   document.write('<link rel="stylesheet" href="css/app.css?v=' + window.__v + '">');
 </script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
 
@@ -41,36 +42,50 @@
 <section class="view" id="view-home">
   <div class="hero" id="hero">
     <canvas class="stars" id="heroCanvas"></canvas>
-    <div class="body">
-      <div class="eyebrow">NASA Space Apps 2026 · CLPS Lunar Mission Browser</div>
-      <h1>حافة <em>النور</em></h1>
-      <p class="lead">على القطب الجنوبي للقمر، الشمس ما بتطلع ولا بتغيب: بتلفّ حوالين الأفق. هون الجبال بتضل مضيئة شهور، والفوهات ما شافت الشمس من مليارات السنين، وفيها جليد. استكشف وين بيوصل الضوء، ووين بتشوف الأرض، وخطّط مهمتك.</p>
-      <div class="ctas">
-        <a class="btn gold" href="#explore">ابدأ الاستكشاف</a>
-        <a class="btn" href="#planner">خطّط مهمة هبوط</a>
-      </div>
-    </div>
+    <div class="hero-gl-host" id="heroGL"></div>
+
     <div class="body-label" id="lblSun"><i></i><span>الشمس</span></div>
-    <div class="body-label" id="lblEarth"><i style="background:#6fa8dc;box-shadow:0 0 10px #6fa8dc"></i><span>الأرض</span></div>
-    <div class="body-label" id="lblMoon"><i style="background:#c2b8c8;box-shadow:0 0 10px #c2b8c8"></i><span>القمر</span></div>
-    <div class="card details" id="moonCard">
-      <div class="head"><canvas id="phaseCanvas"></canvas><div><b>القمر كما يُرى من الأرض</b><div class="muted small" id="phaseName">—</div></div></div>
-      <dl class="kv">
-        <dt>الجزء المضاء</dt><dd id="hcIllum">—</dd>
-        <dt>البعد عن الأرض</dt><dd id="hcDist">—</dd>
-        <dt>الشمس فوق القطب الجنوبي</dt><dd id="hcPoleSun">—</dd>
-        <dt>القطر</dt><dd>3,474 km</dd>
-        <dt>الجاذبية</dt><dd>1.62 m/s²</dd>
-      </dl>
-    </div>
+    <div class="body-label" id="lblEarth"><i></i><span>الأرض</span></div>
+    <div class="body-label" id="lblMoon"><i></i><span>القمر</span></div>
+
+    <aside class="glass sys-panel" id="sysPanel">
+      <div class="sys-brand">
+        <h1>حافة النور</h1>
+        <p>القطب الجنوبي للقمر، المكان الوحيد اللي الشمس فيه بتلفّ حوالين الأفق بدل ما تطلع وتغيب.</p>
+      </div>
+      <div class="sys-sec">
+        <div class="sys-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>الجسم المعروض</div>
+        <div class="seg seg-pill" id="bodySeg"><button data-b="moon" class="on">القمر</button><button data-b="earth">الأرض</button><button data-b="sun">الشمس</button></div>
+      </div>
+      <div class="sys-sec">
+        <div class="sys-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>خيارات العرض</div>
+        <label class="toggle">مسارات المدارات<input type="checkbox" data-t="orbits" checked><i></i></label>
+        <label class="toggle">الأسماء<input type="checkbox" data-t="labels" checked><i></i></label>
+        <label class="toggle">منطقة القطب الجنوبي<input type="checkbox" data-t="pole" checked><i></i></label>
+        <label class="toggle">شبكة الإحداثيات<input type="checkbox" data-t="grid"><i></i></label>
+      </div>
+      <div class="sys-cta">
+        <a class="btn gold" href="#explore">استكشف القطب ثلاثي الأبعاد</a>
+        <a class="btn ghost" href="#planner">خطّط مهمة هبوط</a>
+      </div>
+    </aside>
+
+    <aside class="glass body-card" id="moonCard">
+      <div class="bc-head"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><b id="bcTitle">تفاصيل القمر</b></div>
+      <div class="bc-top"><canvas id="phaseCanvas"></canvas><dl class="kv" id="bcStatic"></dl></div>
+      <div class="bc-div"></div>
+      <dl class="kv" id="bcLive"></dl>
+      <p class="bc-note" id="phaseName"></p>
+    </aside>
+
     <div class="time-pill" id="heroTime">
-      <div class="t"><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="heroDate">—</span></span><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="heroClock">—</span> UTC</span></div>
-      <button class="round-btn" id="heroPlay" title="تشغيل الزمن"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
+      <div class="t"><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="heroDate">—</span></span><span class="sep"></span><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="heroClock">—</span> UTC</span></div>
+      <button class="round-btn" id="heroPlay" title="شغّل الزمن"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
     </div>
   </div>
 
   <div class="wrap">
-    <div class="page-head"><div><div class="eyebrow">Explore · Analyze · Plan</div><h1>القطب الجنوبي بنظرة وحدة</h1>
+    <div class="page-head"><div><h1>القطب الجنوبي بنظرة وحدة</h1>
       <p>كل الأرقام بالموقع محسوبة من بيانات ناسا الحقيقية: تضاريس LOLA (دقة 80 م)، ومواقع الشمس والأرض من JPL، ومناطق الجليد من رصدات Moon Mineralogy Mapper.</p></div></div>
     <div class="feature-grid">
       <div class="card pad" style="grid-row: span 2">
@@ -217,7 +232,7 @@
 <!-- ============================== PLANNER ============================== -->
 <section class="view" id="view-planner">
   <div class="wrap">
-    <div class="page-head"><div><div class="eyebrow">Mission planner</div><h1>مخطط المهمة</h1>
+    <div class="page-head"><div><h1>مخطط المهمة</h1>
       <p>حدّد متى بتقدر تهبط، وكم بدها المهمة، وشو مواصفات مركبتك. بنجرّب كل موقع بالقطب الجنوبي (شبكة كل 2 كم) بكل يوم هبوط ممكن، وبنحسب الإضاءة والاتصال ورصيد البطارية ساعة بساعة على التضاريس الحقيقية. بعدين بنطلعلك أفضل 3 مواقع، مع القرب من الجليد.</p></div></div>
     <div class="planner">
       <div class="col">
@@ -294,7 +309,7 @@
 <!-- ============================== COMPARE ============================== -->
 <section class="view" id="view-compare">
   <div class="wrap">
-    <div class="page-head"><div><div class="eyebrow">Compare two sites</div><h1>مقارنة بين موقعين</h1>
+    <div class="page-head"><div><h1>مقارنة بين موقعين</h1>
       <p>اختار موقعين من القائمة، أو اضغط على الخريطة. بنحسب الاثنين لنفس الفترة ونفس المركبة (من إعدادات مخطط المهمة)، وبنعلّم الأفضل بكل معيار.</p></div>
       <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
         <label class="fld"><span>بداية الفترة</span><input type="date" class="inp" id="cmpFrom" style="width:170px"></label>
@@ -329,7 +344,7 @@
 <!-- ============================== ICE ============================== -->
 <section class="view" id="view-ice">
   <div class="wrap">
-    <div class="page-head"><div><div class="eyebrow">Water ice · permanently shadowed regions</div><h1>وين الجليد بالقطب الجنوبي؟</h1>
+    <div class="page-head"><div><h1>وين الجليد بالقطب الجنوبي؟</h1>
       <p>بقيعان الفوهات اللي ما بتوصلها الشمس أبداً، الحرارة بتنزل لحد 25–40 كلفن (أبرد من سطح بلوتو)، فالماء بيضل متجمد مليارات السنين. هاي الخريطة بتعرض <b>169 منطقة ظل دائم</b> رصد فيها جهاز Moon Mineralogy Mapper التابع لناسا آثار جليد على السطح، مع الحرارة والهيدروجين لكل وحدة.</p></div></div>
     <div class="metrics" style="grid-template-columns:repeat(4,1fr); margin-bottom:16px">
       <div class="metric"><div class="lab">مناطق فيها جليد مرصود</div><div class="val">169</div></div>
@@ -359,7 +374,7 @@
 <!-- ============================== ABOUT ============================== -->
 <section class="view" id="view-about">
   <div class="wrap">
-    <div class="page-head"><div><div class="eyebrow">Methods · Data · Sources</div><h1>المنهجية والمصادر</h1>
+    <div class="page-head"><div><h1>المنهجية والمصادر</h1>
       <p>كل رقم بالموقع إله مصدر، وبنقدر نعيد حسابه. هون بنشرح كيف حسبنا، وشو حدود الدقة، ومن وين تنزّل البيانات.</p></div></div>
     <div class="methods" id="methods"></div>
   </div>
@@ -371,6 +386,7 @@
     var v = window.__v;
     ['config.js', 'js/sunearth.js', 'js/terrain.js', 'js/sites.js', 'js/rocks.js', 'js/planner.js', 'js/sky.js', 'js/polarmap.js', 'js/charts.js', 'js/app.js']
       .forEach(function (f) { document.write('<script src="' + f + '?v=' + v + '"><\/script>'); });
+    document.write('<script type="module" src="js/hero3d.js?v=' + v + '"><\/script>');
   })();
 </script>
 </body>

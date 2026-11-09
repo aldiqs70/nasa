@@ -179,69 +179,73 @@
 
   // ================================================================== HOME
   const Home = (() => {
-    let tex = null, earthTex = null, playing = false, t = Date.now(), rot = 0, raf = null, on = false, last = 0, stars = null;
-    function layout() {
-      const cv = $('heroCanvas'), W = cv.clientWidth, H = cv.clientHeight;
-      const small = W < 980;
-      return {
-        W, H,
-        sun: { x: small ? W * 0.02 : -W * 0.03, y: H * (small ? 0.62 : 0.34), r: H * (small ? 0.12 : 0.17) },
-        moon: { x: small ? W * 0.5 : W * 0.38, y: H * (small ? 0.68 : 0.53), r: Math.min(H * (small ? 0.2 : 0.28), W * (small ? 0.3 : 0.2)) },
-        earth: { x: small ? W * 0.84 : W * 0.66, y: H * (small ? 0.86 : 0.76), r: Math.min(H, W) * (small ? 0.06 : 0.075) },
-      };
+    let gl = null, playing = false, t = Date.now(), on = false, body = 'moon', tex = null, earthTex = null, timer = null;
+    const ttl = { moon: 'تفاصيل القمر', earth: 'تفاصيل الأرض', sun: 'تفاصيل الشمس' };
+    const kvHTML = (rows) => rows.map(([k, v]) => '<dt>' + k + '</dt><dd>' + v + '</dd>').join('');
+    const phaseName = (k, waxing) => k < 0.03 ? 'محاق' : k < 0.35 ? (waxing ? 'هلال متزايد' : 'هلال متناقص') : k < 0.65 ? (waxing ? 'تربيع أول' : 'تربيع أخير') : k < 0.97 ? (waxing ? 'أحدب متزايد' : 'أحدب متناقص') : 'بدر';
+    function geo(tt) {
+      const g = S.eph.at(clampT(tt)), e = g.earth, en = Math.hypot(e[0], e[1], e[2]), eh = [e[0] / en, e[1] / en, e[2] / en];
+      const k = (1 + Sky.dot(g.sun, eh)) / 2;
+      // altitude of the Sun / Earth above the horizon at the south pole (up = -z)
+      const P = [0, 0, -R_KM], ev = [e[0] - P[0], e[1] - P[1], e[2] - P[2]], evn = Math.hypot(ev[0], ev[1], ev[2]);
+      return { g, en, eh, k, sunPole: Math.asin(-g.sun[2]) * 180 / Math.PI, earthPole: Math.asin(-ev[2] / evn) * 180 / Math.PI };
     }
-    function drawScene() {
-      const cv = $('heroCanvas'); if (!cv.clientWidth) return;
-      if (!stars || stars.w !== cv.clientWidth || stars.h !== cv.clientHeight) {
-        const sc = document.createElement('canvas'); Sky.stars(sc, { density: 2200, W: cv.clientWidth, H: cv.clientHeight });
-        stars = { c: sc, w: cv.clientWidth, h: cv.clientHeight };
-        const dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr;
+    function thumb(G) {
+      const cv = $('phaseCanvas'), dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = 72 * dpr; cv.height = 72 * dpr;
+      const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, 72, 72);
+      if (body === 'moon' && tex) Sky.sphere(g, 36, 36, 33, tex, { kind: 'moon', basis: Sky.basisFromView(G.eh, [0, 0, 1]), light: G.g.sun, ambient: 0.12 });
+      if (body === 'earth' && earthTex) { const B = Sky.basisFromView([-G.eh[0], -G.eh[1], -G.eh[2]], [0, 0, 1]); Sky.sphere(g, 36, 36, 30, earthTex, { kind: 'earth', basis: Sky.basisFromAngles(-Sky.gmst(t), 12), lightView: [Sky.dot(G.g.sun, B.R), Sky.dot(G.g.sun, B.U), Sky.dot(G.g.sun, B.F)] }); }
+      if (body === 'sun') {
+        const halo = g.createRadialGradient(36, 36, 18, 36, 36, 36); halo.addColorStop(0, 'rgba(255,170,70,0.55)'); halo.addColorStop(1, 'rgba(255,140,50,0)');
+        g.fillStyle = halo; g.fillRect(0, 0, 72, 72);
+        const ph = g.createRadialGradient(32, 32, 2, 36, 36, 24); ph.addColorStop(0, '#fff6dc'); ph.addColorStop(0.55, '#ffc35c'); ph.addColorStop(1, '#e0661c');
+        g.fillStyle = ph; g.beginPath(); g.arc(36, 36, 24, 0, 7); g.fill();
       }
-      const L = layout(), g = cv.getContext('2d'), dpr = cv.width / L.W;
-      g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(stars.c, 0, 0, cv.width, cv.height); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // orbit lines
-      g.strokeStyle = 'rgba(214,164,81,0.22)'; g.lineWidth = 1;
-      g.beginPath(); g.ellipse((L.moon.x + L.earth.x) / 2, (L.moon.y + L.earth.y) / 2 - L.H * 0.04, Math.abs(L.earth.x - L.moon.x) * 0.72, L.H * 0.16, -0.32, 0, 7); g.stroke();
-      g.strokeStyle = 'rgba(194,184,200,0.10)';
-      g.beginPath(); g.ellipse(L.W * 0.52, L.H * 0.56, L.W * 0.52, L.H * 0.36, -0.12, 0, 7); g.stroke();
-      Sky.sun(g, L.sun.x, L.sun.y, L.sun.r, performance.now() / 1000);
-      if (tex) {
-        const lv = (b) => Sky.norm([L.sun.x - b.x, -(L.sun.y - b.y), Math.hypot(L.sun.x - b.x, L.sun.y - b.y) * 0.32]);
-        Sky.sphere(g, L.moon.x, L.moon.y, L.moon.r, tex, { kind: 'moon', basis: Sky.basisFromAngles(rot, -24), lightView: lv(L.moon) });
-        if (earthTex) Sky.sphere(g, L.earth.x, L.earth.y, L.earth.r, earthTex, { kind: 'earth', basis: Sky.basisFromAngles(rot * 6 + 30, 18), lightView: lv(L.earth) });
-      }
-      const place = (id, b, dx, dy) => { const el = $(id); el.style.left = (b.x + dx) + 'px'; el.style.top = (b.y + dy) + 'px'; };
-      place('lblSun', { x: Math.max(L.sun.x, 0) + L.sun.r * 0.6, y: L.sun.y }, 0, L.sun.r * 0.9);
-      place('lblMoon', L.moon, L.moon.r * 0.62, -L.moon.r * 0.95);
-      place('lblEarth', L.earth, -L.earth.r * 0.4, L.earth.r + 8);
     }
-    function moonCard() {
+    function card() {
       if (!S.eph) return;
-      const tt = clampT(t), g = S.eph.at(tt), e = g.earth, en = Math.hypot(e[0], e[1], e[2]), eh = [e[0] / en, e[1] / en, e[2] / en];
-      const cosA = Sky.dot(g.sun, eh), k = (1 + cosA) / 2;
-      const g2 = S.eph.at(clampT(tt + 6 * HOUR)), e2 = g2.earth, en2 = Math.hypot(e2[0], e2[1], e2[2]);
-      const k2 = (1 + Sky.dot(g2.sun, [e2[0] / en2, e2[1] / en2, e2[2] / en2])) / 2, waxing = k2 > k;
-      const name = k < 0.03 ? 'محاق' : k < 0.35 ? (waxing ? 'هلال متزايد' : 'هلال متناقص') : k < 0.65 ? (waxing ? 'تربيع أول' : 'تربيع أخير') : k < 0.97 ? (waxing ? 'أحدب متزايد' : 'أحدب متناقص') : 'بدر';
-      $('phaseName').textContent = name;
-      $('hcIllum').textContent = (k * 100).toFixed(0) + '%';
-      $('hcDist').textContent = Math.round(en).toLocaleString('en-US') + ' km';
-      $('hcPoleSun').textContent = (Math.asin(-g.sun[2]) * 180 / Math.PI).toFixed(2) + '°';
-      const cv = $('phaseCanvas'); const dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = 54 * dpr; cv.height = 54 * dpr;
-      const gc = cv.getContext('2d'); gc.setTransform(dpr, 0, 0, dpr, 0, 0); gc.clearRect(0, 0, 54, 54);
-      if (tex) Sky.sphere(gc, 27, 27, 26, tex, { kind: 'moon', basis: Sky.basisFromView(eh, [0, 0, 1]), light: g.sun, ambient: 0.04 });
+      const G = geo(t), G2 = geo(t + 6 * HOUR), waxing = G2.k > G.k;
+      $('bcTitle').textContent = ttl[body];
+      if (body === 'moon') {
+        $('bcStatic').innerHTML = kvHTML([['القطر', '3,474 km'], ['الجاذبية', '1.62 m/s²'], ['اليوم القمري', '29.5 يوم']]);
+        $('bcLive').innerHTML = kvHTML([['الطور الآن', phaseName(G.k, waxing)], ['الجزء المضاء', (G.k * 100).toFixed(0) + '%'], ['البعد عن الأرض', Math.round(G.en).toLocaleString('en-US') + ' km'], ['الشمس فوق القطب الجنوبي', G.sunPole.toFixed(2) + '°']]);
+        $('phaseName').textContent = 'الطور والبعد محسوبين لهاي اللحظة من مواقع الشمس والأرض الحقيقية (JPL DE421).';
+      } else if (body === 'earth') {
+        const ke = 1 - G.k;
+        $('bcStatic').innerHTML = kvHTML([['القطر', '12,742 km'], ['الجاذبية', '9.81 m/s²'], ['اليوم', '24 ساعة']]);
+        $('bcLive').innerHTML = kvHTML([['طورها من القمر', phaseName(ke, !waxing).replace('هلال', 'هلال أرضي')], ['الجزء المضاء', (ke * 100).toFixed(0) + '%'], ['ارتفاعها فوق أفق القطب', G.earthPole.toFixed(2) + '°'], ['الاتصال من القطب', G.earthPole > 0 ? 'ممكن (فوق الأفق)' : 'لا (تحت الأفق)']]);
+        $('phaseName').textContent = 'من القمر، الأرض بتمر بأطوار عكس أطوار القمر: لما يكون عنّا محاق، الأرض من القمر بتكون بدر.';
+      } else {
+        const au = G.g.sunAU;
+        $('bcStatic').innerHTML = kvHTML([['القطر', '1,392,700 km'], ['حرارة السطح', '5,772 K'], ['ضوءها بيوصل', '8.3 دقيقة']]);
+        $('bcLive').innerHTML = kvHTML([['البعد عن القمر', (au * 149.598).toFixed(1) + ' مليون كم'], ['شدة الإشعاع', Math.round(1361 / (au * au)) + ' W/m²'], ['ارتفاعها فوق القطب الجنوبي', G.sunPole.toFixed(2) + '°']]);
+        $('phaseName').textContent = 'محور القمر مايل 1.5° بس، فالشمس بالقطب الجنوبي ما بتعلى أكثر من 1.6° فوق الأفق. عشان هيك الظلال طويلة جداً، وفي فوهات ما بتشوف الشمس أبداً.';
+      }
+      thumb(G);
       const d = new Date(t);
       $('heroDate').textContent = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
       $('heroClock').textContent = pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes());
     }
-    function loop(ts) {
-      raf = null; if (!on) return;
-      if (ts - last > 110 && !document.hidden) {
-        const dt = Math.min(0.2, (ts - last) / 1000); last = ts;
-        rot += dt * 3;
-        if (playing) { t = clampT(t + dt * 4 * DAY); if (t >= S.range[1] - 2 * HOUR) t = S.range[0]; moonCard(); }
-        drawScene();
+    function labels(sc) {
+      const hero = $('hero'), W = hero.clientWidth, H = hero.clientHeight;
+      for (const [id, mesh, k] of [['lblMoon', sc.moon, 1.12], ['lblEarth', sc.earth, 1.35], ['lblSun', sc.sun, 0.75]]) {
+        const R = mesh.geometry.parameters.radius, p = sc.project(mesh, R * k), el = $(id);
+        let x = Math.min(W - 90, Math.max(90, p.x)), y = Math.min(H - 40, Math.max(56, p.y - 6));
+        el.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%, -100%)';
+        el.style.opacity = p.vis ? '' : '0';
       }
-      raf = requestAnimationFrame(loop);
+    }
+    function startGL() {
+      if (gl || !window.Hero3D) return !!gl;
+      gl = window.Hero3D.mount($('heroGL'));
+      if (!gl) return false;
+      $('hero').classList.add('gl'); gl.onFrame = labels; gl.setActive(on);
+      return true;
+    }
+    function fallback() {
+      // no WebGL: a still star field and the labels hidden
+      $('hero').classList.add('no-labels');
+      const cv = $('heroCanvas'); Sky.stars(cv, { density: 2200 });
     }
     async function miniMap() {
       await loadGrid();
@@ -264,12 +268,27 @@
     }
     return {
       async init() {
-        Promise.all([Sky.texture('img/moon.jpg?v=1', 2048), Sky.texture('img/earth.jpg?v=1', 1024)]).then(([a, b]) => { tex = a; earthTex = b; moonCard(); drawScene(); }).catch((e) => console.warn(e));
-        $('heroPlay').onclick = () => { playing = !playing; $('heroPlay').innerHTML = playing ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>'; };
-        window.addEventListener('resize', () => { stars = null; drawScene(); });
-        moonCard(); miniMap().catch((e) => console.warn(e));
+        Promise.all([Sky.texture('img/moon_2k.jpg?v=1', 1024), Sky.texture('img/earth_day.jpg?v=1', 1024)]).then(([a, b]) => { tex = a; earthTex = b; card(); }).catch((e) => console.warn(e));
+        if (!startGL()) {
+          window.addEventListener('hero3d-ready', startGL, { once: true });
+          setTimeout(() => { if (!gl) fallback(); }, 6000);
+        }
+        $$('#bodySeg button').forEach((b) => (b.onclick = () => {
+          body = b.dataset.b; $$('#bodySeg button').forEach((x) => x.classList.toggle('on', x === b));
+          if (window.Hero3D) window.Hero3D.focus(body === 'moon' ? 'all' : body); card();
+        }));
+        $$('#sysPanel [data-t]').forEach((c) => (c.onchange = () => {
+          if (c.dataset.t === 'labels') $('hero').classList.toggle('no-labels', !c.checked);
+          else if (window.Hero3D) window.Hero3D.toggle(c.dataset.t, c.checked);
+        }));
+        $('heroPlay').onclick = () => {
+          playing = !playing;
+          $('heroPlay').innerHTML = playing ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>';
+          clearInterval(timer); if (playing) timer = setInterval(() => { t = clampT(t + 3 * HOUR); if (t >= S.range[1] - 2 * HOUR) t = S.range[0]; card(); }, 120);
+        };
+        card(); miniMap().catch((e) => console.warn(e));
       },
-      active(v) { on = v; if (on && !raf) raf = requestAnimationFrame(loop); },
+      active(v) { on = v; if (gl) gl.setActive(v); },
     };
   })();
 
@@ -323,7 +342,7 @@
         point: { pixelSize: size || 9, color: Cesium.Color.fromCssColorString(color), outlineColor: Cesium.Color.fromCssColorString('#120f17'), outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
         label: name ? { text: name, font: '600 13px "IBM Plex Sans Arabic", "Space Grotesk", Arial', fillColor: Cesium.Color.fromCssColorString(color), outlineColor: Cesium.Color.BLACK, outlineWidth: 3, style: Cesium.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new Cesium.Cartesian2(0, -16), disableDepthTestDistance: Number.POSITIVE_INFINITY, translucencyByDistance: new Cesium.NearFarScalar(3e5, 1, 1.6e6, 0) } : undefined,
       }, extra || {}));
-      pt(0, -90, 'القطب الجنوبي', '#ff8f7a');
+      pt(0, -90, 'South Pole', '#ff8f7a');
       siteEnts = S.sites.map((s) => { const e = pt(s.lon, s.lat, s.name, '#c2b8c8'); e.siteId = s.id; return e; });
       iceEnts = S.ice.psr.filter((p) => p.m3 >= 5).map((p) => { const e = pt(p.lon, p.lat, p.name ? p.name + ' ❄' : '❄', '#7fc3ff', null, 7); e.iceId = p.id; return e; });
       refreshTop();
