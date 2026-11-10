@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Edge of Light</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nav/app.css">
+</head>
+<body>
+
+<header class="bar gutter">
+  <a class="brand" href="#navigator">
+    <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="16" r="9.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20.7" cy="9.3" r="3.2" fill="var(--sun)"/></svg>
+    <span class="brand-name" data-i18n="brand">Edge of Light</span>
+    <span class="brand-tag" data-i18n="tagline">Lunar landing site navigator</span>
+  </a>
+  <nav class="bar-nav" aria-label="Sections">
+    <a href="#navigator" data-i18n="nav_navigator">Navigator</a>
+    <a href="#site-file" data-i18n="nav_file">Site file</a>
+    <a href="#method" data-i18n="nav_method">Method</a>
+  </nav>
+  <button type="button" class="btn" id="langBtn" lang="ar">العربية</button>
+</header>
+
+<main>
+<section id="navigator" aria-labelledby="skyTitle">
+
+  <div class="sky">
+    <div class="sky-head gutter">
+      <div class="site-id">
+        <h1 class="vh" id="skyTitle" data-i18n="sky_title">The sky from the landing site</h1>
+        <label class="vh" for="siteSel" data-i18n="site">Landing site</label>
+        <select id="siteSel" class="site-sel"></select>
+        <div class="site-coord" id="siteCoord">&nbsp;</div>
+      </div>
+      <div class="readouts" aria-live="off">
+        <div class="ro">
+          <div class="ro-k"><i class="dot dot-sun" aria-hidden="true"></i><span id="roSunK">Sunset in</span></div>
+          <div class="ro-v" id="roSunV">&nbsp;</div>
+          <div class="ro-s" id="roSunS">&nbsp;</div>
+        </div>
+        <div class="ro">
+          <div class="ro-k"><i class="dot dot-earth" aria-hidden="true"></i><span id="roEarthK">Earthset in</span></div>
+          <div class="ro-v" id="roEarthV">&nbsp;</div>
+          <div class="ro-s" id="roEarthS">&nbsp;</div>
+        </div>
+        <div class="ro">
+          <div class="ro-k"><i class="dot dot-power" aria-hidden="true"></i><span data-i18n="power">Panel output</span></div>
+          <div class="ro-v" id="roPowV">&nbsp;</div>
+          <div class="ro-s" id="roPowS">&nbsp;</div>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="skyCv" class="sky-cv" tabindex="0" role="img" aria-label="Horizon panorama"></canvas>
+
+    <div class="sky-foot gutter">
+      <button type="button" class="btn btn-play" id="playBtn" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path id="playIcon" d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span id="playTxt" data-i18n="play">Play</span></button>
+      <div class="clock" id="clock">&nbsp;</div>
+      <button type="button" class="btn" id="toNow" data-i18n="to_now">Now</button>
+      <button type="button" class="btn" id="toLanding" data-i18n="to_landing">Landing day</button>
+      <p class="sky-note" id="skyNote">&nbsp;</p>
+    </div>
+  </div>
+
+  <div class="desk gutter">
+    <div class="map-col">
+      <div class="col-head">
+        <h2 data-i18n="map_title">South pole, 150 km around</h2>
+        <div class="seg" id="mapSeg" role="group" aria-label="Map layer">
+          <button type="button" data-v="relief" data-i18n="l_relief">Relief</button>
+          <button type="button" data-v="sun" class="on" data-i18n="l_sun">Sunlight</button>
+          <button type="button" data-v="earth" data-i18n="l_earth">Earth</button>
+        </div>
+      </div>
+      <div class="map" id="map"><canvas id="mapCv"></canvas><div class="map-pins" id="mapPins"></div></div>
+      <ul class="map-key">
+        <li><i style="background:var(--sun)"></i><span data-i18n="to_sun">Direction to the Sun now</span></li>
+        <li><i style="background:var(--earth)"></i><span data-i18n="to_earth">Direction to the Earth now</span></li>
+      </ul>
+      <p class="cap" id="mapCap">&nbsp;</p>
+    </div>
+
+    <div class="strips-col">
+      <div class="col-head">
+        <h2 data-i18n="strips_title">Sunlight and Earth contact, site by site</h2>
+      </div>
+      <div class="ctl">
+        <div class="ctl-g">
+          <span class="ctl-k" id="landK" data-i18n="landing">Landing</span>
+          <div class="stepper" role="group" aria-labelledby="landK">
+            <button type="button" id="landPrev" aria-label="One day earlier">&#x2212;</button>
+            <output id="landOut">&nbsp;</output>
+            <button type="button" id="landNext" aria-label="One day later">+</button>
+          </div>
+          <span class="slip" id="slipTxt"></span>
+          <button type="button" class="btn-link" id="slipReset" hidden data-i18n="to_plan">Back to plan</button>
+        </div>
+        <div class="ctl-g">
+          <span class="ctl-k" data-i18n="mission">Mission</span>
+          <div class="seg" id="missionSeg" role="group" aria-label="Mission length">
+            <button type="button" data-v="7">7 d</button><button type="button" data-v="14" class="on">14 d</button><button type="button" data-v="28">28 d</button>
+          </div>
+        </div>
+        <div class="ctl-g">
+          <span class="ctl-k" data-i18n="lander">Lander</span>
+          <div class="seg" id="landerSeg" role="group" aria-label="Lander size">
+            <button type="button" data-v="small" data-i18n="small">Small</button><button type="button" data-v="medium" class="on" data-i18n="medium">Medium</button><button type="button" data-v="large" data-i18n="large">Large</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="strips" id="strips">
+        <div class="strips-names" id="stripNames"></div>
+        <canvas id="stripsCv" class="strips-cv"></canvas>
+      </div>
+
+      <ul class="legend" id="stripLegend">
+        <li><i class="sw sw-sun"></i><span data-i18n="lg_sun">Sunlight on the lander</span></li>
+        <li><i class="sw sw-earth"></i><span data-i18n="lg_earth">Earth in view</span></li>
+        <li><i class="sw sw-ok"></i><span data-i18n="lg_ok">Landing that day works</span></li>
+        <li><i class="sw sw-sleep"></i><span data-i18n="lg_sleep">Lander has to sleep</span></li>
+        <li><i class="sw sw-lost"></i><span data-i18n="lg_lost">Lander is lost</span></li>
+      </ul>
+
+      <div class="verdict" id="verdict" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="site-file" class="file gutter" aria-labelledby="fileTitle">
+  <div class="col-head">
+    <h2 id="fileTitle">&nbsp;</h2>
+    <div class="seg" id="fileSeg" role="group" aria-label="Analysis layer">
+      <button type="button" data-v="zone" class="on" data-i18n="f_zone">Landing zone</button>
+      <button type="button" data-v="slope" data-i18n="f_slope">Slope</button>
+      <button type="button" data-v="sun" data-i18n="f_sun">Sunlight</button>
+      <button type="button" data-v="earth" data-i18n="f_earth">Earth contact</button>
+    </div>
+  </div>
+  <div class="file-grid">
+    <div class="file-map">
+      <div class="amap"><canvas id="fileCv"></canvas></div>
+      <div class="amap-legend" id="fileLegend"></div>
+    </div>
+    <div class="file-side">
+      <dl class="facts" id="facts"></dl>
+      <div class="geo">
+        <h3 data-i18n="geo_title">Geology</h3>
+        <div id="geoNotes"></div>
+        <figure class="geo-fig" id="geoFig"></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="method" class="method gutter" aria-labelledby="methodTitle">
+  <h2 id="methodTitle" data-i18n="method_title">How the numbers are made</h2>
+  <div class="method-grid">
+    <p data-i18n="m1">Terrain comes from the LOLA 80 m south-pole elevation model (NASA GSFC). From each site we cast 2,880 rays out to 300 km over the curved Moon and keep the highest terrain in every quarter degree of azimuth. That outline is the horizon you see in the panorama.</p>
+    <p data-i18n="m2">Sun and Earth positions come from NAIF SPICE (DE421) in the Moon-fixed frame, hour by hour, so libration and the lunar seasons are included. The Sun counts as up by the share of its disc clear of the terrain, the Earth by its centre.</p>
+    <p data-i18n="m3">The lander is an hourly energy balance: Sun-tracking panels, a battery, a working load and a sleep mode that keeps the heaters on. Research and education prototype, not flight certification. Earth visibility is geometric, not radio link quality.</p>
+  </div>
+  <p class="cap" data-i18n="scope">Preview of the new interface on six team sites. The full site search, water ice, custom coordinates and sites elsewhere on the Moon move over next.</p>
+</section>
+</main>
+
+<script src="js/sunearth.js"></script>
+<script src="js/planner.js"></script>
+<script src="js/sites.js"></script>
+<script src="nav/i18n.js"></script>
+<script src="nav/data.js"></script>
+<script src="nav/sky.js"></script>
+<script src="nav/strips.js"></script>
+<script src="nav/map.js"></script>
+<script src="nav/sitefile.js"></script>
+<script src="nav/main.js"></script>
+</body>
+</html>
