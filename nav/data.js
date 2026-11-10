@@ -12,7 +12,14 @@
   const EFF = 0.30, MIN_SOC = 0.20, WAKE_SOC = 0.50, SLEEP_SHARE = 0.10;
 
   async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + ' ' + r.status); return r.json(); }
-  async function getBin(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + ' ' + r.status); return r.arrayBuffer(); }
+  // Binary files have a base64 twin (<name>.json) for hosts that only serve text types.
+  async function getBin(url) {
+    const r = await fetch(url).catch(() => null);
+    if (r && r.ok) return r.arrayBuffer();
+    const j = await getJSON(url + '.json'), bin = atob(j.b64), out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out.buffer;
+  }
   NAV.getJSON = getJSON; NAV.getBin = getBin;
 
   function circMean(az, n) {
