@@ -13,10 +13,42 @@
   SiteFile.ZONE = ZONE; SiteFile.SLOPE_CLASSES = SLOPE_CLASSES;
   SiteFile.rampCss = (name) => { const R = name === 'sun' ? SUN : EARTH, c = (v) => 'rgb(' + ramp(R, v).map(Math.round).join(',') + ')'; return 'linear-gradient(to right,' + [0, 0.2, 0.4, 0.65, 0.85, 1].map((v) => c(v) + ' ' + v * 100 + '%').join(',') + ')'; };
 
+  const keyOf = (site) => (site.custom ? site.lat.toFixed(5) + ',' + site.lon.toFixed(5) : site.id);
+  SiteFile.keyOf = keyOf;
+  SiteFile.prototype.get = function (site) { return this.cache[keyOf(site)]; };
+
+  // Curated sites read their precomputed crop. A picked point builds its relief from the terrain model
+  // and takes sunlight and Earth view from the 1 km long-term grids.
   SiteFile.prototype.load = async function (site) {
-    if (this.cache[site.id]) return this.cache[site.id];
-    const { reliefN: N, gridN: G, reliefRes: res } = NAV.data.crop, buf = await NAV.getBin('data/sites/' + site.id + '.bin');
-    const h = new Int16Array(buf, 0, N * N), lit = new Uint8Array(buf, N * N * 2, G * G), ear = new Uint8Array(buf, N * N * 2 + G * G, G * G);
+    const key = keyOf(site);
+    if (this.cache[key]) return this.cache[key];
+    const N = NAV.data.crop.reliefN, res = NAV.data.crop.reliefRes, HALF = NAV.data.crop.halfM;
+    let h, litAt, earAt, coarse = false;
+    if (!site.custom) {
+      const G = NAV.data.crop.gridN, buf = await NAV.getBin('data/sites/' + site.id + '.bin');
+      h = new Int16Array(buf, 0, N * N);
+      const lit = new Uint8Array(buf, N * N * 2, G * G), ear = new Uint8Array(buf, N * N * 2 + G * G, G * G);
+      const grid = (arr, r, c) => {                                        // bilinear sample of a G x G layer at relief pixel (r, c), 0..1
+        const fy = (r + 0.5) * G / N - 0.5, fx = (c + 0.5) * G / N - 0.5, j = Math.max(0, Math.min(G - 2, Math.floor(fy))), i = Math.max(0, Math.min(G - 2, Math.floor(fx)));
+        const wy = Math.max(0, Math.min(1, fy - j)), wx = Math.max(0, Math.min(1, fx - i)), a = j * G + i;
+        return ((arr[a] * (1 - wx) + arr[a + 1] * wx) * (1 - wy) + (arr[a + G] * (1 - wx) + arr[a + G + 1] * wx) * wy) / 200;
+      };
+      litAt = (r, c) => grid(lit, r, c); earAt = (r, c) => grid(ear, r, c);
+    } else {
+      if (site.flat) return (this.cache[key] = { none: true });
+      const [T3, X] = await Promise.all([NAV.terrain(), NAV.extras()]);
+      if (!T3) return (this.cache[key] = { none: true });
+      h = new Float32Array(N * N); coarse = true;
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const v = T3.heightXY(site.x - HALF + (c + 0.5) * res, site.y + HALF - (r + 0.5) * res); h[r * N + c] = Number.isNaN(v) ? 0 : v; }
+      const km = (arr, r, c) => {                                          // bilinear sample of a 1 km grid
+        if (!arr) return 0;
+        const fx = (site.x - HALF + (c + 0.5) * res + 160000) / 1000 - 0.5, fy = (160000 - (site.y + HALF - (r + 0.5) * res)) / 1000 - 0.5;
+        const i = Math.floor(fx), j = Math.floor(fy); if (i < 0 || j < 0 || i >= 319 || j >= 319) return 0;
+        const wx = fx - i, wy = fy - j, a = j * 320 + i, v = (k) => (arr[k] === 255 ? 0 : arr[k]);
+        return ((v(a) * (1 - wx) + v(a + 1) * wx) * (1 - wy) + (v(a + 320) * (1 - wx) + v(a + 321) * wx) * wy) / 100;
+      };
+      litAt = (r, c) => km(X.lit, r, c); earAt = (r, c) => km(X.earth, r, c);
+    }
     const shade = new Float32Array(N * N), slope = new Float32Array(N * N);
     const lx = -0.58, ly = 0.58, lz = 0.57, z = 2.2;                       // light from the upper left of the map
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
@@ -26,20 +58,15 @@
       const nx = -gx * z, ny = -gy * z, nn = Math.hypot(nx, ny, 1);
       shade[i] = Math.pow(Math.max(0, Math.min(1, ((nx * lx + ny * ly + lz) / nn - 0.22) / 0.62)), 0.9);
     }
-    const grid = (arr, r, c) => {                                          // bilinear sample of a G x G layer at relief pixel (r, c), 0..1
-      const fy = (r + 0.5) * G / N - 0.5, fx = (c + 0.5) * G / N - 0.5, j = Math.max(0, Math.min(G - 2, Math.floor(fy))), i = Math.max(0, Math.min(G - 2, Math.floor(fx)));
-      const wy = Math.max(0, Math.min(1, fy - j)), wx = Math.max(0, Math.min(1, fx - i)), a = j * G + i;
-      return ((arr[a] * (1 - wx) + arr[a + 1] * wx) * (1 - wy) + (arr[a + G] * (1 - wx) + arr[a + G + 1] * wx) * wy) / 200;
-    };
     const litF = new Float32Array(N * N), earF = new Float32Array(N * N), zone = new Uint8Array(N * N);
     let area = 0;
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-      const i = r * N + c; litF[i] = grid(lit, r, c); earF[i] = grid(ear, r, c);
-      let sm = 0, k = 0;                                                   // slope over a 240 m patch
-      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const rr = r + dr, cc = c + dc; if (rr >= 0 && cc >= 0 && rr < N && cc < N) { sm = Math.max(sm, slope[rr * N + cc]); k++; } }
+      const i = r * N + c; litF[i] = litAt(r, c); earF[i] = earAt(r, c);
+      let sm = 0;                                                          // steepest slope in a 240 m patch
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const rr = r + dr, cc = c + dc; if (rr >= 0 && cc >= 0 && rr < N && cc < N) sm = Math.max(sm, slope[rr * N + cc]); }
       if (sm <= ZONE.slope && litF[i] * 100 >= ZONE.lit && earF[i] * 100 >= ZONE.earth) { zone[i] = 1; area++; }
     }
-    return (this.cache[site.id] = { N, shade, slope, litF, earF, zone, areaKm2: area * res * res / 1e6 });
+    return (this.cache[key] = { N, shade, slope, litF, earF, zone, coarse, areaKm2: area * res * res / 1e6 });
   };
 
   SiteFile.prototype.resize = function () {
@@ -48,9 +75,9 @@
   };
 
   SiteFile.prototype.draw = function (site, layer) {
-    const d = this.cache[site.id], g = this.ctx, S = this.size;
+    const d = this.get(site), g = this.ctx, S = this.size;
     g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); g.fillStyle = '#000'; g.fillRect(0, 0, S, S);
-    if (!d) return;
+    if (!d || d.none) return;
     const N = d.N, off = this.off; off.width = off.height = N;
     const og = off.getContext('2d'), im = og.createImageData(N, N), px = im.data;
     for (let i = 0; i < N * N; i++) {

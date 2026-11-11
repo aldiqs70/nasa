@@ -7,10 +7,15 @@
 
   function img(url) { return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error(url)); im.src = url; }); }
 
-  function Map(cv, pinsEl, onPick) {
+  function Map(cv, pinsEl, onPick, onPoint) {
     this.cv = cv; this.ctx = cv.getContext('2d'); this.pinsEl = pinsEl; this.onPick = onPick;
     this.base = document.createElement('canvas'); this.layers = null; this.relief = null; this.size = 0;
+    cv.addEventListener('click', (e) => {                                 // any point on the map
+      const r = cv.getBoundingClientRect(), x = ((e.clientX - r.left) / r.width * 2 - 1) * HALF, y = (1 - (e.clientY - r.top) / r.height * 2) * HALF, rho = Math.hypot(x, y);
+      onPoint(2 * Math.atan(rho / (2 * R)) / D2R - 90, Math.atan2(x, y) / D2R);
+    });
   }
+  const inside = (s) => Math.abs(s.x) < HALF * 0.985 && Math.abs(s.y) < HALF * 0.985;
   Map.prototype.load = async function () {
     const [relief, lit, earth, maxLit] = await Promise.all([img('img/pole_relief.jpg'), NAV.getBin('data/grid/lit.bin'), NAV.getBin('data/grid/earth.bin'), NAV.getBin('data/grid/maxlit.bin')]);
     this.relief = relief;
@@ -33,8 +38,8 @@
 
   Map.prototype.pins = function (sites, sel) {
     this.pinsEl.textContent = '';
-    const S = this.size, placed = sites.map((s) => { const [x, y] = this.xy(s.x, s.y); return { x0: x - 8, x1: x + 8, y0: y - 8, y1: y + 8, pin: s }; }), hit = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
-    const order = sites.map((s, i) => i).sort((a, b) => (a === sel ? -1 : b === sel ? 1 : 0));
+    const S = this.size, placed = sites.filter(inside).map((s) => { const [x, y] = this.xy(s.x, s.y); return { x0: x - 8, x1: x + 8, y0: y - 8, y1: y + 8, pin: s }; }), hit = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+    const order = sites.map((s, i) => i).filter((i) => inside(sites[i])).sort((a, b) => (a === sel ? -1 : b === sel ? 1 : 0));
     const sides = {};
     for (const i of order) {
       const s = sites[i], [x, y] = this.xy(s.x, s.y), w = NAV.siteName(s).length * 6.6 + 8, h = 16;
@@ -43,6 +48,7 @@
       placed.push(box[side]); sides[i] = side;
     }
     sites.forEach((s, i) => {
+      if (!inside(s)) return;
       const b = document.createElement('button'), sp = document.createElement('span');
       b.type = 'button'; b.className = 'pin side-' + sides[i] + (i === sel ? ' on' : '');
       b.style.left = (s.x + HALF) / (2 * HALF) * 100 + '%'; b.style.top = (HALF - s.y) / (2 * HALF) * 100 + '%';
@@ -93,6 +99,7 @@
     const g = this.ctx, S = this.size;
     g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(this.base, 0, 0);
     g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    if (!inside(site)) return;
     const [px, py] = this.xy(site.x, site.y), ar = NAV.lang === 'ar';
     g.font = '600 11px ' + (ar ? '"IBM Plex Sans Arabic", sans-serif' : 'Archivo, system-ui, sans-serif'); g.textBaseline = 'middle'; g.direction = ar ? 'rtl' : 'ltr';
     const ray = (az, col, dashed) => {

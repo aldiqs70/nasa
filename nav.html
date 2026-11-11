@@ -68,16 +68,55 @@
   </div>
 
   <div class="desk gutter">
-    <div class="map-col">
+    <div class="map-col" id="mapCol">
       <div class="col-head">
-        <h2 data-i18n="map_title">South pole, 150 km around</h2>
+        <h2 data-i18n="map_title">The Moon</h2>
+        <div class="tools">
+          <div class="seg" id="viewSeg" role="group" aria-label="Map view">
+            <button type="button" data-v="3d" class="on">3D</button>
+            <button type="button" data-v="2d">2D</button>
+          </div>
+          <button type="button" class="btn btn-icon" id="expandBtn" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4.5 4.5M2.5 13.5l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-i18n="wider">Wider</span></button>
+        </div>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="globe" id="globe"></div>
+        <div class="map" id="map" hidden><canvas id="mapCv"></canvas><div class="map-pins" id="mapPins"></div></div>
+        <p class="stage-msg" id="stageMsg" hidden></p>
+        <div class="stage-cam" id="camBtns">
+          <button type="button" data-cam="moon" data-i18n="cam_moon">Whole Moon</button>
+          <button type="button" data-cam="pole" data-i18n="cam_pole">South pole</button>
+          <button type="button" data-cam="top" data-i18n="cam_top">From above</button>
+          <button type="button" data-cam="site" data-i18n="cam_site">This site</button>
+        </div>
+        <div class="stage-read" id="hoverRead" hidden></div>
+      </div>
+
+      <div class="opts" id="opts3d">
+        <label class="chk"><input type="checkbox" id="optSun" checked><span data-i18n="opt_sun">Real sunlight</span></label>
+        <label class="chk"><input type="checkbox" id="optShadows"><span data-i18n="opt_shadows">Terrain shadows</span></label>
+        <label class="chk"><input type="checkbox" id="optFine"><span data-i18n="opt_fine">Finer detail</span></label>
+        <label class="chk"><input type="checkbox" id="optIce" checked><span data-i18n="opt_ice">Ice regions</span></label>
+      </div>
+      <div class="opts" id="opts2d" hidden>
         <div class="seg" id="mapSeg" role="group" aria-label="Map layer">
           <button type="button" data-v="relief" data-i18n="l_relief">Relief</button>
           <button type="button" data-v="sun" class="on" data-i18n="l_sun">Sunlight</button>
           <button type="button" data-v="earth" data-i18n="l_earth">Earth</button>
         </div>
       </div>
-      <div class="map" id="map"><canvas id="mapCv"></canvas><div class="map-pins" id="mapPins"></div></div>
+
+      <form class="ll" id="llForm" novalidate>
+        <span class="ctl-k" data-i18n="ll_title">Any point</span>
+        <label class="vh" for="llLat" data-i18n="fact_lat">Latitude</label>
+        <input id="llLat" inputmode="decimal" autocomplete="off" placeholder="-89.45" size="8">
+        <label class="vh" for="llLon" data-i18n="fact_lon">Longitude</label>
+        <input id="llLon" inputmode="decimal" autocomplete="off" placeholder="-137.4" size="8">
+        <button type="submit" class="btn" data-i18n="ll_go">Analyse</button>
+        <span class="ll-err" id="llErr" role="alert"></span>
+      </form>
+
       <ul class="map-key">
         <li><i style="background:var(--sun)"></i><span data-i18n="to_sun">Direction to the Sun now</span></li>
         <li><i style="background:var(--earth)"></i><span data-i18n="to_earth">Direction to the Earth now</span></li>
@@ -111,8 +150,20 @@
           <div class="seg" id="landerSeg" role="group" aria-label="Lander size">
             <button type="button" data-v="small" data-i18n="small">Small</button><button type="button" data-v="medium" class="on" data-i18n="medium">Medium</button><button type="button" data-v="large" data-i18n="large">Large</button>
           </div>
+          <button type="button" class="btn-link" id="landerMore" aria-expanded="false" aria-controls="landerForm" data-i18n="lander_more">Edit</button>
         </div>
       </div>
+      <form class="lander-form" id="landerForm" hidden novalidate>
+        <label><span data-i18n="lf_cap">Battery (Wh)</span><input id="lfCap" type="number" min="100" step="100"></label>
+        <label><span data-i18n="lf_load">Working draw (W)</span><input id="lfLoad" type="number" min="1" step="10"></label>
+        <label><span data-i18n="lf_area">Panels (m²)</span><input id="lfArea" type="number" min="0.1" step="0.5"></label>
+        <label><span data-i18n="lf_eff">Panel efficiency (%)</span><input id="lfEff" type="number" min="5" max="45" step="1"></label>
+        <label><span data-i18n="lf_min">Lowest charge allowed (%)</span><input id="lfMin" type="number" min="0" max="80" step="5"></label>
+        <label><span data-i18n="lf_sleep">Sleep draw (W)</span><input id="lfSleep" type="number" min="0" step="1"></label>
+        <label><span data-i18n="lf_mode">Panels</span><select id="lfMode"><option value="track" data-i18n="lf_track">Turn with the Sun</option><option value="fixed" data-i18n="lf_fixed">Fixed direction</option></select></label>
+        <label><span data-i18n="lf_az">Fixed panel faces (°)</span><input id="lfAz" type="number" min="0" max="359" step="5"></label>
+        <label class="chk lf-wide"><input type="checkbox" id="lfHib"><span data-i18n="lf_hib">Can sleep through the dark and wake with the Sun</span></label>
+      </form>
 
       <div class="strips" id="strips">
         <div class="strips-names" id="stripNames"></div>
@@ -133,26 +184,68 @@
 </section>
 
 <section id="site-file" class="file gutter" aria-labelledby="fileTitle">
-  <div class="col-head">
+  <div class="file-head">
     <h2 id="fileTitle">&nbsp;</h2>
-    <div class="seg" id="fileSeg" role="group" aria-label="Analysis layer">
-      <button type="button" data-v="zone" class="on" data-i18n="f_zone">Landing zone</button>
-      <button type="button" data-v="slope" data-i18n="f_slope">Slope</button>
-      <button type="button" data-v="sun" data-i18n="f_sun">Sunlight</button>
-      <button type="button" data-v="earth" data-i18n="f_earth">Earth contact</button>
+    <p class="file-sub" id="fileSub"></p>
+  </div>
+  <dl class="facts" id="facts"></dl>
+
+  <div class="file-row">
+    <div class="blk">
+      <h3 id="nowTitle">&nbsp;</h3>
+      <div class="duo">
+        <canvas id="compassCv" class="dial" role="img" aria-label="Compass"></canvas>
+        <dl class="kv" id="nowList"></dl>
+      </div>
+    </div>
+    <div class="blk">
+      <h3 id="roseTitle">&nbsp;</h3>
+      <div class="duo">
+        <canvas id="roseCv" class="dial" role="img" aria-label="Panel energy by direction"></canvas>
+        <div class="duo-text"><dl class="kv" id="roseList"></dl><p class="advice" id="roseAdvice"></p></div>
+      </div>
     </div>
   </div>
+
+  <div class="blk">
+    <h3 id="batTitle">&nbsp;</h3>
+    <dl class="facts facts-sm" id="misFacts"></dl>
+    <canvas id="batCv" class="bat-cv" role="img" aria-label="Battery charge over the mission"></canvas>
+    <ul class="legend">
+      <li><i class="sw sw-soc"></i><span data-i18n="lg_soc">Battery charge</span></li>
+      <li><i class="sw sw-sun"></i><span data-i18n="lg_sun">Sunlight on the lander</span></li>
+      <li><i class="sw sw-earth"></i><span data-i18n="lg_earth">Earth in view</span></li>
+      <li><i class="sw sw-work"></i><span data-i18n="lg_work">Working</span></li>
+      <li><i class="sw sw-asleep"></i><span data-i18n="lg_asleep">Asleep</span></li>
+      <li><i class="sw sw-dead"></i><span data-i18n="lg_dead">Lost</span></li>
+    </ul>
+    <p class="advice" id="batText"></p>
+  </div>
+
   <div class="file-grid">
-    <div class="file-map">
-      <div class="amap"><canvas id="fileCv"></canvas></div>
+    <div class="file-map blk">
+      <div class="col-head">
+        <h3 data-i18n="amap_title">Ground around the site, 24 km across</h3>
+        <div class="seg" id="fileSeg" role="group" aria-label="Analysis layer">
+          <button type="button" data-v="zone" class="on" data-i18n="f_zone">Landing zone</button>
+          <button type="button" data-v="slope" data-i18n="f_slope">Slope</button>
+          <button type="button" data-v="sun" data-i18n="f_sun">Sunlight</button>
+          <button type="button" data-v="earth" data-i18n="f_earth">Earth contact</button>
+        </div>
+      </div>
+      <div class="amap"><canvas id="fileCv"></canvas><p class="stage-msg" id="fileMsg" hidden></p></div>
       <div class="amap-legend" id="fileLegend"></div>
     </div>
     <div class="file-side">
-      <dl class="facts" id="facts"></dl>
-      <div class="geo">
+      <div class="blk geo">
         <h3 data-i18n="geo_title">Geology</h3>
         <div id="geoNotes"></div>
+        <div id="rockMix"></div>
         <figure class="geo-fig" id="geoFig"></figure>
+      </div>
+      <div class="blk">
+        <h3 data-i18n="ice_title">Water ice nearby</h3>
+        <div class="tbl-wrap" id="iceBox"></div>
       </div>
     </div>
   </div>
@@ -165,19 +258,25 @@
     <p data-i18n="m2">Sun and Earth positions come from NAIF SPICE (DE421) in the Moon-fixed frame, hour by hour, so libration and the lunar seasons are included. The Sun counts as up by the share of its disc clear of the terrain, the Earth by its centre.</p>
     <p data-i18n="m3">The lander is an hourly energy balance: Sun-tracking panels, a battery, a working load and a sleep mode that keeps the heaters on. Research and education prototype, not flight certification. Earth visibility is geometric, not radio link quality.</p>
   </div>
-  <p class="cap" data-i18n="scope">Preview of the new interface on six team sites. The full site search, water ice, custom coordinates and sites elsewhere on the Moon move over next.</p>
+  <p class="cap" data-i18n="scope">New interface. The search across all 11,844 candidate sites and the full water-ice atlas move over next.</p>
 </section>
 </main>
 
+<script src="config.js"></script>
 <script src="js/sunearth.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/rocks.js"></script>
 <script src="js/planner.js"></script>
 <script src="js/sites.js"></script>
 <script src="nav/i18n.js"></script>
+<script src="nav/horizon.js"></script>
 <script src="nav/data.js"></script>
 <script src="nav/sky.js"></script>
 <script src="nav/strips.js"></script>
 <script src="nav/map.js"></script>
 <script src="nav/sitefile.js"></script>
+<script src="nav/globe.js"></script>
+<script src="nav/details.js"></script>
 <script src="nav/main.js"></script>
 </body>
 </html>
