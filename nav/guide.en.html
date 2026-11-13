@@ -1,0 +1,145 @@
+<h2>How to use Edge of Light</h2>
+<p class="lead">Choose a site, a landing day and a mission length. Each tab then answers one question about that plan.</p>
+<ol>
+  <li><b>Set the plan in the bar under the tabs.</b> Site, landing day, mission length in days (any number from 1 to 60), lander size, and the time being shown. The bar stays the same in every tab.</li>
+  <li><b>Read the Overview.</b> The ring shows one lap of the Sun after landing, and the sentence beside it says whether the mission works. The lines under it lead to the tab with the detail.</li>
+  <li><b>Slip the date.</b> Drag around the ring, or drag the landing flag in Sites and dates, or use the − and + buttons. If the landing stops working, the page proposes the next date that works at this site, and the nearest site that works on this date.</li>
+  <li><b>Try another place.</b> Pick a site from the list, or open Map and click anywhere on the Moon, or type coordinates. A picked point is analysed like any other site and joins the comparison.</li>
+  <li><b>Press Play</b> to run time forward at one day per second, in any tab.</li>
+</ol>
+
+<h3>What each tab shows</h3>
+<ul>
+  <li><b>Overview:</b> the Ring of Light, the verdict, a one-line summary of each topic, and every site as a small ring.</li>
+  <li><b>Sky:</b> the full horizon around the site with the Sun and the Earth where they really are, and how long until each sets or rises.</li>
+  <li><b>Sites and dates:</b> 60 days of sunlight and Earth contact at every site, and what happens for each possible landing day.</li>
+  <li><b>Map:</b> the Moon in 3D or as a 2D polar map. Click to analyse a point.</li>
+  <li><b>Power:</b> battery charge through the mission, where to point the panels and the antenna, and the lander’s settings.</li>
+  <li><b>Slope and terrain:</b> the ground 24 km around the site and the slopes inside the landing circle.</li>
+  <li><b>Ice and rover:</b> the nearest ice-bearing shadowed regions and whether a rover can drive to them.</li>
+  <li><b>Rocks:</b> the geology team’s notes, the estimated rock mix and the team’s map.</li>
+</ul>
+
+<h3>Reading the Ring of Light</h3>
+<p>Near the pole the Sun does not rise and set. It travels once around the horizon every 29.5 days, so its direction tells the date. The ring uses that:</p>
+<ul>
+  <li><b>Inside the rim</b> is the sky seen from the site, with the zenith toward the centre. The grey shapes growing in from the rim are the real terrain horizon. The dotted line is the Sun’s path, bright where the Sun clears the terrain.</li>
+  <li><b>The yellow ring</b> is sunlight on the lander, hour by hour, drawn at the direction the Sun has at that hour. Gaps are darkness.</li>
+  <li><b>The blue ring</b> is the Earth in view. <b>The outer line</b> is the lander: light while working, amber while asleep, red once lost.</li>
+  <li><b>The flag</b> marks the landing. Dates run around the ring from it.</li>
+</ul>
+
+<h2>How the numbers are made</h2>
+<p>Every figure on the site comes from the formulas below. They are the ones in the code (<code>js/sunearth.js</code>, <code>js/terrain.js</code>, <code>js/planner.js</code>, <code>nav/horizon.js</code>, <code>nav/rover.js</code>).</p>
+
+<details open><summary>1. Coordinates and the local frame</summary>
+<p>Positions are in the Moon-fixed mean-Earth frame (MOON_ME), the frame of the LOLA maps. The Moon is taken as a sphere of radius R = 1737.4 km, and heights are measured from that sphere. For a site at latitude φ and longitude λ, three unit vectors define up, east and north:</p>
+<div class="eq">up    = ( cos φ cos λ,  cos φ sin λ,  sin φ )
+east  = ( −sin λ,       cos λ,        0     )
+north = ( −sin φ cos λ, −sin φ sin λ, cos φ )</div>
+<p>The polar maps use the south polar stereographic projection, with longitude 0° pointing up:</p>
+<div class="eq">ρ = 2R · tan( (90° + φ) / 2 )      x = ρ sin λ      y = ρ cos λ</div>
+</details>
+
+<details><summary>2. Where the Sun and the Earth are</summary>
+<p>The direction of the Sun and the position of the Earth come from the NAIF SPICE ephemeris DE421 with the Moon’s orientation kernel, sampled every hour from 2026 to 2030 and interpolated linearly between samples. Libration and the lunar seasons are therefore included. The Sun is far enough that its direction is the same from anywhere on the Moon. The Earth is close, so its direction is taken from the site itself:</p>
+<div class="eq">P = up · (R + h + 2 m)          site position, 2 m above the ground
+e = E − P                      vector from the site to the Earth’s centre</div>
+</details>
+
+<details><summary>3. Altitude and azimuth</summary>
+<p>For any direction d (the Sun’s unit vector, or e for the Earth):</p>
+<div class="eq">altitude = asin( d·up / |d| )
+azimuth  = atan2( d·east , d·north )        0° = north, 90° = east</div>
+<p>Altitude is measured from the level horizon of a smooth Moon. It can be slightly negative while the body is still visible, because a site on a height looks down past that level.</p>
+</details>
+
+<details><summary>4. The terrain horizon</summary>
+<p>From the site, 2,880 rays are marched outward to 300 km across the LOLA elevation model (80 m cells near the pole, 160 m and 640 m farther out). Every terrain sample is placed on the curved Moon before its angle is measured, so curvature is exact:</p>
+<div class="eq">O = up · (R + h_site + 2 m)                      the observer
+S = û(x, y) · (R + h_sample)                     a terrain sample
+elevation = asin( (S − O)·up / |S − O| )</div>
+<p>The highest elevation is kept for every quarter degree of azimuth, in four distance bands (0–1.5 km, 1.5–8 km, 8–40 km, 40–300 km). The largest of the four is the horizon H(azimuth). Outside the terrain model, north of about 80°S, the horizon is the smooth sphere seen from 2 m:</p>
+<div class="eq">H = −acos( R / (R + 2 m) ) = −0.087°</div>
+</details>
+
+<details><summary>5. Sunlight: how much of the Sun’s disc is clear</summary>
+<p>The Sun is a disc, not a point, and at the pole it often sits half behind a ridge. Sunlight is the fraction f of the disc above the horizon at the Sun’s azimuth:</p>
+<div class="eq">r = 0.2666° / d_AU                   apparent radius of the Sun
+x = ( altitude − H ) / r
+f = 0                                 if x ≤ −1
+f = 1                                 if x ≥ 1
+f = ( acos(−x) + x·√(1 − x²) ) / π    otherwise</div>
+<p>“Sunset in” and “Sunrise in” count the hours until f next reaches zero or leaves it.</p>
+</details>
+
+<details><summary>6. Earth in view</summary>
+<p>The Earth counts as in view when its centre is above the terrain horizon at its azimuth. This is line of sight, not radio link quality. The share of the Earth’s face that is lit, seen from the site, comes from the angle θ between the Sun and the Earth in the sky:</p>
+<div class="eq">in view  ⇔  altitude_Earth > H( azimuth_Earth )
+lit share = ( 1 − cos θ ) / 2</div>
+</details>
+
+<details><summary>7. Solar power</summary>
+<p>Sunlight carries 1361 W/m² at the Earth’s distance, scaled by the actual distance. Panels stand upright because the polar Sun is within a few degrees of the horizon. With panel area A and efficiency η:</p>
+<div class="eq">F = 1361 / d_AU²                                         W/m²
+P_tracking = F · η · A · f · cos(altitude)
+P_fixed    = P_tracking · max( 0, cos(azimuth − azimuth_panel) )</div>
+<p>The panel rose in the Power tab adds up P_fixed over the mission for every direction, in 5° steps, and compares the best one with the tracking panel.</p>
+</details>
+
+<details><summary>8. Battery, sleep and the three outcomes</summary>
+<p>The lander is followed hour by hour. With capacity C, charge E and the power drawn L:</p>
+<div class="eq">E ← min( C , E + P·1 h − L·1 h )</div>
+<ul>
+  <li><b>Working:</b> L is the working draw.</li>
+  <li><b>Asleep:</b> when the charge falls below the lowest allowed level, a lander that can sleep switches to the sleep draw (heaters only). It wakes when sunlight has recharged it to 50%.</li>
+  <li><b>Lost:</b> the charge reaches zero while asleep, or falls below the lowest level in a lander that cannot sleep.</li>
+</ul>
+<p>A landing day <b>works</b> if the lander works through the whole mission and touches down in sunlight, <b>sleeps</b> if it sleeps and wakes, and is <b>lost</b> otherwise. The slack is the number of later landing days that still work in a row.</p>
+</details>
+
+<details><summary>9. Slope and the landing circle</summary>
+<p>Slope is the steepness of the 80 m elevation cells, from height differences on both sides of a cell, corrected for the map’s scale factor k:</p>
+<div class="eq">k = 1 + ρ² / (4R²)
+slope = atan( √( (∂h/∂x)² + (∂h/∂y)² ) · k )</div>
+<p>A lander does not hit a point, so the Slope tab also gives the spread of slopes of all cells inside a circle around the site: the share in each class, the median, the value 9 cells in 10 stay below, and the steepest.</p>
+</details>
+
+<details><summary>10. The 24 km map and the landing zone</summary>
+<p>For the curated sites, sunlight and Earth view are computed on a 250 m grid for every fourth hour of 2027, each cell with its own terrain horizon. A cell is in the landing zone when its slope is at most 10°, the Sun is up at least 40% of the year and the Earth is in view at least 40%. For a picked point these two layers come from the 1 km grid computed for 2026–2030.</p>
+</details>
+
+<details><summary>11. Water ice and the rover route</summary>
+<p>Ice regions are the 169 permanently shadowed regions with Moon Mineralogy Mapper ice detections listed by Lemelin et al. (2021). Permanent shadow alone is not treated as ice. Distance is from the site to the nearest point of the region’s outline, converted from map metres to ground distance by dividing by k.</p>
+<p>The rover route is found on 160 m terrain cells. A cell can be driven if its slope is within the rover’s limit. The route is the shortest path through drivable cells (Dijkstra’s algorithm, eight neighbours, length measured in 3D) to the first cell inside the outline. If there is none, a second search finds the route whose steepest cell is gentlest, to say what limit the trip would need. Drive time is the route length divided by the speed you set.</p>
+</details>
+
+<details><summary>12. Rock mix</summary>
+<p>Lunar Prospector’s gamma-ray maps give iron oxide (FeO) and thorium (Th) for an area about 45 km wide. These two numbers are explained as a mix of three typical rocks, with shares that add up to 100% and cannot be negative (least squares):</p>
+<table>
+  <tr><th>Rock</th><th>FeO, wt%</th><th>Th, ppm</th></tr>
+  <tr><td>Anorthosite</td><td>1.0</td><td>0.2</td></tr>
+  <tr><td>Basalt / norite</td><td>14.0</td><td>1.5</td></tr>
+  <tr><td>KREEP</td><td>10.5</td><td>10.0</td></tr>
+</table>
+<p>It describes the wider area, not the rock under the lander.</p>
+</details>
+
+<h2>Check a site in the detailed tools</h2>
+<p>Edge of Light is the quick view. For a closer look, take the site’s latitude and longitude from the Slope and terrain tab into the tools the challenge names:</p>
+<ul>
+  <li><a href="https://ssd.jpl.nasa.gov/horizons/" target="_blank" rel="noopener">JPL Horizons</a>: Sun and Earth angles for an observer placed on the Moon’s surface.</li>
+  <li><a href="https://trek.nasa.gov/moon/" target="_blank" rel="noopener">NASA Moon Trek</a>: imagery and elevation layers, distances and profiles.</li>
+  <li><a href="https://quickmap.lroc.asu.edu/" target="_blank" rel="noopener">LROC QuickMap</a>: high-resolution images and illumination layers.</li>
+  <li><a href="https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/" target="_blank" rel="noopener">Canadian Space Agency, Moon exploration</a>: lunar rover and exploration programmes.</li>
+</ul>
+
+<h2>What is not modelled</h2>
+<ul>
+  <li>Our angles have not yet been compared number by number with JPL Horizons.</li>
+  <li>The terrain model has 80 m cells. Boulders, small craters and local ground strength are not seen.</li>
+  <li>Earth contact is line of sight to the Earth’s centre, with no radio link budget and no ground station schedule.</li>
+  <li>The lander has no thermal model and no charging losses. Its three sizes are illustrative.</li>
+  <li>Terrain brightness in the Sky tab and in the ring is illustrative. The horizon outline is computed.</li>
+  <li>This is a research and education prototype, not flight certification.</li>
+</ul>

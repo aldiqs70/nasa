@@ -9,7 +9,7 @@
     nav_method: ['Method', 'المنهجية'],
     nav_classic: ['Previous version', 'النسخة السابقة'],
     sky_title: ['The sky from the landing site', 'السماء من موقع الهبوط'],
-    site: ['Landing site', 'موقع الهبوط'],
+    site: ['Site', 'الموقع'],
     power: ['Panel output', 'إنتاج الألواح'],
     play: ['Play', 'تشغيل'], pause: ['Pause', 'إيقاف'],
     to_now: ['Now', 'الآن'], to_landing: ['Landing day', 'يوم الهبوط'],
@@ -71,7 +71,7 @@
     fact_lit: ['Sunlight, next 60 days', 'ضوء الشمس، 60 يوماً قادمة'], fact_comm: ['Earth in view, next 60 days', 'الأرض ظاهرة، 60 يوماً قادمة'],
     fact_dark: ['Longest darkness', 'أطول عتمة'], fact_gap: ['Longest gap in contact', 'أطول انقطاع اتصال'],
     fact_h_note: ['above the 1737.4 km sphere', 'فوق كرة نصف قطرها 1737.4 كم'],
-    geo_title: ['Geology', 'الجيولوجيا'],
+    geo_title: ['Rocks and geology', 'الصخور والجيولوجيا'],
     geo_terrain: ['Terrain', 'التضاريس'], geo_rock: ['Expected rock', 'الصخور المتوقعة'], geo_landing: ['For landing', 'للهبوط'],
     geo_fig_cap: ['Analysis map from the geology team ({credit}). Each site takes one figure per language.', 'خريطة تحليلية من فريق الجيولوجيا ({credit}). لكل موقع شكل واحد لكل لغة.'],
     geo_fig_other: ['Shown in Arabic until the English version is ready.', 'معروضة بالإنجليزية إلى أن تجهز النسخة العربية.'],
@@ -141,10 +141,54 @@
     rock_none: ['This point is outside the chemistry map.', 'هذه النقطة خارج خريطة الكيمياء.'],
     geo_none: ['No team notes for this point yet.', 'لا توجد ملاحظات للفريق عن هذه النقطة بعد.'],
     ice_title: ['Water ice nearby', 'الجليد المائي القريب'], ice_region: ['Shadowed region #{n}', 'منطقة ظل #{n}'],
-    ice_h: ['Region|Distance|Ice detections|Area|Warmest', 'المنطقة|المسافة|رصدات الجليد|المساحة|أعلى حرارة'],
-    ice_note: ['Permanently shadowed regions with Moon Mineralogy Mapper ice detections (Lemelin et al. 2021). Distance is to the nearest edge. Surface ice stays stable below about 110 K.', 'مناطق ظل دائم فيها رصدات جليد من Moon Mineralogy Mapper (Lemelin وآخرون 2021). المسافة إلى أقرب حافة. الجليد السطحي يبقى ثابتاً تحت نحو 110 كلفن.'],
+    ice_h: ['Region|Distance|Ice detections|Area|Warmest|Access slope', 'المنطقة|المسافة|رصدات الجليد|المساحة|أعلى حرارة|انحدار الوصول'],
+    ice_note: ['Permanently shadowed regions with Moon Mineralogy Mapper ice detections (Lemelin et al. 2021). Distance is to the nearest edge. Access slope is the dataset’s slope class for reaching the region. Surface ice stays stable below about 110 K.', 'مناطق ظل دائم فيها رصدات جليد من Moon Mineralogy Mapper (Lemelin وآخرون 2021). المسافة إلى أقرب حافة. انحدار الوصول هو فئة الانحدار للوصول إلى المنطقة كما في البيانات. الجليد السطحي يبقى ثابتاً تحت نحو 110 كلفن.'],
     ice_none: ['The ice map covers the south polar region only.', 'خريطة الجليد تغطي منطقة القطب الجنوبي فقط.'],
     show_it: ['Analyse', 'حلّل'],
+    tab_overview: ['Overview', 'نظرة عامة'], tab_sky: ['Sky', 'السماء'], tab_dates: ['Sites and dates', 'المواقع والمواعيد'], tab_map: ['Map', 'الخريطة'], tab_power: ['Power', 'الطاقة'],
+    tab_slope: ['Slope and terrain', 'الانحدار والتضاريس'], tab_ice: ['Ice and rover', 'الجليد والروفر'], tab_rocks: ['Rocks', 'الصخور'], tab_guide: ['Guide', 'الدليل'],
+    days: ['days', 'يوماً'],
+    rg_sun: ['Sunlight, one lap of the Sun from landing', 'ضوء الشمس، دورة كاملة للشمس من يوم الهبوط'], rg_earth: ['Earth in view', 'الأرض ظاهرة'], rg_state: ['Lander through the mission', 'حال المركبة خلال المهمة'],
+    ring_cap: ['Near the pole the Sun circles the horizon once every 29.5 days, so around this ring direction and date are the same thing. Inside is the sky from the site, with the terrain rising from the rim. Drag around the ring to slip the landing date.',
+      'قرب القطب تدور الشمس حول الأفق مرة كل 29.5 يوماً، فالاتجاه والتاريخ حول هذه الحلقة شيء واحد. في الداخل السماء كما تُرى من الموقع، والتضاريس ترتفع من الحافة. اسحب حول الحلقة لتأخير موعد الهبوط.'],
+    glance_title: ['At a glance', 'في لمحة'], minis_title: ['Every site on this landing date', 'كل المواقع في موعد الهبوط هذا'],
+    c_slack: ['{n} d of slack', 'هامش {n} يوم'], c_slack_all: ['works on every later day', 'ينجح في كل الأيام اللاحقة'],
+    g_sun_up: ['Up. Sets in', 'ظاهرة. تغيب بعد'], g_sun_down: ['Behind the terrain. Rises in', 'خلف التضاريس. تظهر بعد'],
+    g_earth_up: ['In view. Sets in', 'ظاهرة. تغيب بعد'], g_earth_down: ['Hidden. Back in', 'مخفية. تعود بعد'],
+    g_pow_ok: ['Works the whole mission', 'تعمل طوال المهمة'], g_pow_sleep: ['Sleeps up to {h} h', 'تنام حتى {h} ساعة'], g_pow_lost: ['Battery flat after {t}', 'تفرغ البطارية بعد {t}'], g_soc: ['lowest charge {p}%', 'أدنى شحن {p}%'],
+    g_sched: ['Schedule', 'الموعد'], g_sched_bad: ['This landing day does not work', 'يوم الهبوط هذا لا ينجح'],
+    g_ground: ['Ground', 'الأرض'], g_no_terrain: ['No terrain model here', 'لا يوجد نموذج تضاريس هنا'], g_slope: ['Slope {v}°', 'الانحدار {v}°'],
+    g_ice: ['Nearest ice', 'أقرب جليد'], g_rock: ['{p}% anorthosite', '{p}% أنورثوسيت'],
+    strips_sub: ['Each row is 60 days at one site. Drag the landing flag on the date line to see what a schedule slip does.', 'كل سطر هو 60 يوماً في موقع واحد. اسحب علم الهبوط على خط التاريخ لترى أثر تأخير الموعد.'],
+    lander_title: ['The lander', 'المركبة'],
+    lander_note: ['The three sizes are illustrative, not the specifications of a real lander. Panels stand upright because the polar Sun stays within a few degrees of the horizon.', 'الأحجام الثلاثة توضيحية وليست مواصفات مركبة حقيقية. الألواح عمودية لأن شمس القطب تبقى على بضع درجات من الأفق.'],
+    slope_title: ['Slope and terrain', 'الانحدار والتضاريس'],
+    circle_title: ['Slopes inside the landing circle', 'الانحدارات داخل دائرة الهبوط'],
+    c_within: ['Ground the lander can take', 'أرض تتحملها المركبة'], c_within_s: ['slope up to {s}°', 'انحدار حتى {s}°'],
+    c_median: ['Typical slope (median)', 'الانحدار المعتاد (الوسيط)'], c_p90: ['9 cells in 10 are below', '9 خلايا من 10 أقل من'], c_max: ['Steepest', 'الأشد'],
+    c_note: ['Slopes of every 80 m cell within {r} km of the site, from the LOLA model. A lander does not hit a point, it lands somewhere in a circle, so the spread matters more than the value at the centre. Rocks and craters smaller than 80 m are not seen.',
+      'انحدار كل خلية 80 م ضمن {r} كم من الموقع، من نموذج LOLA. المركبة لا تصيب نقطة بل تهبط في مكان ما داخل دائرة، فتوزيع الانحدارات أهم من قيمة المركز. الصخور والفوهات الأصغر من 80 م لا تظهر.'],
+    ice_sub: ['Distance from the landing site to shadowed regions where ice was detected, and whether a rover can drive there.', 'المسافة من موقع الهبوط إلى مناطق الظل التي رُصد فيها الجليد، وهل يستطيع روفر الوصول إليها.'],
+    ice_list: ['Nearest regions', 'أقرب المناطق'],
+    rover_title: ['Rover route to the ice', 'مسار الروفر إلى الجليد'], rover_to: ['Rover route to {name}', 'مسار الروفر إلى {name}'], rover_set: ['The rover', 'الروفر'],
+    rv_slope: ['Steepest slope it can drive (°)', 'أشد انحدار يستطيع قيادته (°)'], rv_speed: ['Average speed (km/h)', 'متوسط السرعة (كم/س)'],
+    rv_lg_route: ['Route within the slope limit', 'المسار ضمن حد الانحدار'], rv_lg_ice: ['Shadowed region with ice detections', 'منطقة ظل فيها رصدات جليد'], rv_lg_steep: ['Steeper than the rover’s limit', 'أشد من حد الروفر'],
+    rv_route: ['Route', 'المسار'],
+    rv_straight: ['Straight line to its edge', 'خط مستقيم إلى حافتها'], rv_len: ['Drivable route', 'المسار القابل للقيادة'], rv_within: ['every cell within {s}°', 'كل خلية ضمن {s}°'],
+    rv_steep: ['Steepest part', 'أشد جزء'], rv_climb: ['Total climb', 'مجموع الصعود'], rv_drop: ['ends {v} from the start', 'النهاية {v} عن البداية'],
+    rv_one: ['Drive time, one way', 'زمن القيادة ذهاباً'], rv_round: ['There and back', 'ذهاباً وإياباً'],
+    rv_none: ['No route within {s}°', 'لا مسار ضمن {s}°'], rv_needs: ['Gentlest route needs', 'أسهل مسار يحتاج'], rv_needs_s: ['about {km} km', 'نحو {km} كم'],
+    rv_inside: ['Mean slope inside the region', 'متوسط الانحدار داخل المنطقة'], rv_inside_s: ['from the ice dataset', 'من بيانات الجليد'],
+    rv_far: ['This region is more than {km} km of map away, too far to route here.', 'هذه المنطقة أبعد من {km} كم على الخريطة، أبعد من أن يُحسب لها مسار هنا.'],
+    rv_dark: ['On {date} the site is dark at landing, so the drive would start without sunlight.', 'يوم {date} الموقع معتم لحظة الهبوط، فالقيادة تبدأ بلا ضوء شمس.'],
+    rv_day_all: ['The round trip takes {t}, and the Sun does not set at the site in the period we have.', 'الذهاب والإياب يستغرق {t}، والشمس لا تغيب عن الموقع في الفترة المتوفرة.'],
+    rv_day_ok: ['Leaving at landing on {date}: the round trip takes {t} and the Sun stays up at the site for {sun}. The rover is back before dark.', 'الانطلاق عند الهبوط يوم {date}: الذهاب والإياب {t} والشمس تبقى ظاهرة في الموقع {sun}. يعود الروفر قبل العتمة.'],
+    rv_day_no: ['Leaving at landing on {date}: the round trip takes {t} but the Sun sets at the site after {sun}. The rover is not back before dark.', 'الانطلاق عند الهبوط يوم {date}: الذهاب والإياب {t} لكن الشمس تغيب عن الموقع بعد {sun}. لا يعود الروفر قبل العتمة.'],
+    rv_note: ['The route is found on 160 m terrain cells, so it tests slope only. Boulders, small craters, soft ground and the cold and darkness inside the region are not modelled. Daylight is the Sun at the landing site, not along the route.',
+      'المسار محسوب على خلايا تضاريس 160 م، فهو يختبر الانحدار فقط. الصخور والفوهات الصغيرة والتربة الرخوة والبرد والعتمة داخل المنطقة غير محسوبة. ضوء النهار هو الشمس عند موقع الهبوط لا على طول المسار.'],
+    geo_notes: ['Notes from the geology team', 'ملاحظات فريق الجيولوجيا'], geo_fig: ['Team analysis map', 'خريطة الفريق التحليلية'],
+    foot: ['Terrain: LOLA 80 m (NASA GSFC). Sun and Earth: NAIF SPICE DE421. Ice: Lemelin et al. 2021. Research and education prototype, not flight certification.', 'التضاريس: LOLA 80 م (ناسا GSFC). الشمس والأرض: NAIF SPICE DE421. الجليد: Lemelin وآخرون 2021. نموذج للبحث والتعليم وليس اعتماداً للطيران.'],
+    plan_btn: ['Change the plan', 'تعديل الخطة'], plan_sum: ['Landing {date}, {n} days, {lander} lander', 'الهبوط {date}، {n} يوماً، مركبة {lander}'],
     load_fail: ['The site data did not load. Reload the page.', 'لم تُحمَّل بيانات الموقع. أعد تحميل الصفحة.'],
   };
   NAV.lang = 'en';
@@ -162,8 +206,10 @@
     return fmt[k] || (fmt[k] = new Intl.DateTimeFormat(NAV.lang === 'ar' ? 'ar-JO-u-nu-latn' : 'en-GB', Object.assign({ timeZone: 'UTC' }, opts)));
   }
   NAV.fmtDay = (ms) => df({ day: 'numeric', month: 'short' }).format(ms);
+  // short date for tight places: Arabic month names are long, so Arabic uses day/month there
+  NAV.fmtDayShort = (ms) => (NAV.lang === 'ar' ? new Date(ms).getUTCDate() + '/' + (new Date(ms).getUTCMonth() + 1) : NAV.fmtDay(ms));
   NAV.fmtDayLong = (ms) => df({ day: 'numeric', month: 'long' }).format(ms);
-  NAV.fmtClock = (ms) => df({ weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(ms) + ', ' + new Date(ms).toISOString().slice(11, 16) + ' UTC';
+  NAV.fmtClock = (ms) => df({ day: 'numeric', month: 'short', year: 'numeric' }).format(ms) + ', ' + new Date(ms).toISOString().slice(11, 16) + ' UTC';
   NAV.fmtMonth = (ms) => df({ month: 'short' }).format(ms);
   NAV.num = (v, d) => Number(v).toLocaleString('en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });
   NAV.siteName = (s) => (s.custom ? s.name || (s.near ? NAV.T('near', { site: NAV.siteName(s.near) }) : NAV.T('picked')) : NAV.lang === 'ar' && s.ar ? s.ar : s.name);

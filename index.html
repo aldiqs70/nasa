@@ -13,31 +13,102 @@
 <body>
 
 <header class="bar gutter">
-  <a class="brand" href="#navigator">
+  <a class="brand" href="#overview">
     <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="16" r="9.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20.7" cy="9.3" r="3.2" fill="var(--sun)"/></svg>
     <span class="brand-name" data-i18n="brand">Edge of Light</span>
     <span class="brand-tag" data-i18n="tagline">Lunar landing site navigator</span>
   </a>
-  <nav class="bar-nav" aria-label="Sections">
-    <a href="#navigator" data-i18n="nav_navigator">Navigator</a>
-    <a href="#site-file" data-i18n="nav_file">Site file</a>
-    <a href="#method" data-i18n="nav_method">Method</a>
-    <a href="classic.html" data-i18n="nav_classic">Previous version</a>
-  </nav>
+  <a class="bar-link" href="classic.html" data-i18n="nav_classic">Previous version</a>
   <button type="button" class="btn" id="langBtn" lang="ar">العربية</button>
 </header>
 
-<main>
-<section id="navigator" aria-labelledby="skyTitle">
+<nav class="tabs" id="tabs" aria-label="Sections">
+  <div class="tabs-in gutter">
+    <a href="#overview" data-tab="overview" data-i18n="tab_overview">Overview</a>
+    <a href="#sky" data-tab="sky" data-i18n="tab_sky">Sky</a>
+    <a href="#dates" data-tab="dates" data-i18n="tab_dates">Sites and dates</a>
+    <a href="#map" data-tab="map" data-i18n="tab_map">Map</a>
+    <a href="#power" data-tab="power" data-i18n="tab_power">Power</a>
+    <a href="#slope" data-tab="slope" data-i18n="tab_slope">Slope and terrain</a>
+    <a href="#ice" data-tab="ice" data-i18n="tab_ice">Ice and rover</a>
+    <a href="#rocks" data-tab="rocks" data-i18n="tab_rocks">Rocks</a>
+    <a href="#guide" data-tab="guide" data-i18n="tab_guide">Guide</a>
+  </div>
+</nav>
 
+<!-- the scenario every tab reads: site, landing day, mission length, lander, and the time shown -->
+<div class="ctx gutter" id="ctx">
+  <div class="ctx-g ctx-site">
+    <label class="ctx-k" for="siteSel" data-i18n="site">Site</label>
+    <select id="siteSel" class="site-sel"></select>
+  </div>
+  <button type="button" class="ctx-more" id="ctxMore" aria-expanded="false"><span id="ctxSum">&nbsp;</span><span class="btn-link" data-i18n="plan_btn">Change the plan</span></button>
+  <div class="ctx-g">
+    <span class="ctx-k" id="landK" data-i18n="landing">Landing</span>
+    <div class="stepper" role="group" aria-labelledby="landK">
+      <button type="button" id="landPrev" aria-label="One day earlier">&#x2212;</button>
+      <output id="landOut">&nbsp;</output>
+      <button type="button" id="landNext" aria-label="One day later">+</button>
+    </div>
+    <span class="slip" id="slipTxt"></span>
+    <button type="button" class="btn-link" id="slipReset" hidden data-i18n="to_plan">Back to plan</button>
+  </div>
+  <div class="ctx-g">
+    <label class="ctx-k" for="missionIn" data-i18n="mission">Mission</label>
+    <div class="seg" id="missionSeg" role="group" aria-label="Mission length">
+      <button type="button" data-v="7">7</button><button type="button" data-v="14" class="on">14</button><button type="button" data-v="28">28</button>
+    </div>
+    <input id="missionIn" class="num-in" type="number" min="1" max="60" step="1" value="14" inputmode="numeric">
+    <span class="ctx-u" data-i18n="days">days</span>
+  </div>
+  <div class="ctx-g">
+    <span class="ctx-k" data-i18n="lander">Lander</span>
+    <div class="seg" id="landerSeg" role="group" aria-label="Lander size">
+      <button type="button" data-v="small" data-i18n="small">Small</button><button type="button" data-v="medium" class="on" data-i18n="medium">Medium</button><button type="button" data-v="large" data-i18n="large">Large</button>
+    </div>
+  </div>
+  <div class="ctx-g ctx-time">
+    <button type="button" class="btn btn-play" id="playBtn" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path id="playIcon" d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span id="playTxt" data-i18n="play">Play</span></button>
+    <span class="clock" id="clock">&nbsp;</span>
+    <button type="button" class="btn" id="toNow" data-i18n="to_now">Now</button>
+    <button type="button" class="btn" id="toLanding" data-i18n="to_landing">Landing day</button>
+  </div>
+</div>
+
+<main>
+
+<!-- ============================== overview -->
+<section class="tab" id="tab-overview" data-tab="overview" aria-labelledby="ovTitle">
+  <div class="ov gutter">
+    <div class="ov-ring">
+      <div class="ring-wrap"><canvas id="ringCv" role="img" aria-label="Ring of light"></canvas><div class="ring-center" id="ringCenter"></div></div>
+      <ul class="legend">
+        <li><i class="sw sw-sun"></i><span data-i18n="rg_sun">Sunlight, one lap of the Sun from landing</span></li>
+        <li><i class="sw sw-earth"></i><span data-i18n="rg_earth">Earth in view</span></li>
+        <li><i class="sw sw-work"></i><span data-i18n="rg_state">Lander through the mission</span></li>
+      </ul>
+      <p class="cap" id="ringCap">&nbsp;</p>
+    </div>
+    <div class="ov-side">
+      <h1 class="ov-title" id="ovTitle">&nbsp;</h1>
+      <p class="site-coord" id="ovCoord">&nbsp;</p>
+      <p class="file-sub" id="fileSub"></p>
+      <div class="verdict" data-verdict></div>
+      <h2 class="ov-h" data-i18n="glance_title">At a glance</h2>
+      <ul class="glance" id="glance"></ul>
+    </div>
+  </div>
+  <div class="ov-all gutter">
+    <h2 data-i18n="minis_title">Every site on this landing date</h2>
+    <div class="minis" id="minis"></div>
+  </div>
+</section>
+
+<!-- ============================== sky -->
+<section class="tab" id="tab-sky" data-tab="sky" hidden aria-labelledby="skyTitle">
   <div class="sky">
     <div class="sky-head gutter">
-      <div class="site-id">
-        <h1 class="vh" id="skyTitle" data-i18n="sky_title">The sky from the landing site</h1>
-        <label class="vh" for="siteSel" data-i18n="site">Landing site</label>
-        <select id="siteSel" class="site-sel"></select>
-        <div class="site-coord" id="siteCoord">&nbsp;</div>
-      </div>
+      <h2 id="skyTitle" data-i18n="sky_title">The sky from the landing site</h2>
       <div class="readouts" aria-live="off">
         <div class="ro">
           <div class="ro-k"><i class="dot dot-sun" aria-hidden="true"></i><span id="roSunK">Sunset in</span></div>
@@ -56,44 +127,54 @@
         </div>
       </div>
     </div>
-
     <canvas id="skyCv" class="sky-cv" tabindex="0" role="img" aria-label="Horizon panorama"></canvas>
-
-    <div class="sky-foot gutter">
-      <button type="button" class="btn btn-play" id="playBtn" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path id="playIcon" d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span id="playTxt" data-i18n="play">Play</span></button>
-      <div class="clock" id="clock">&nbsp;</div>
-      <button type="button" class="btn" id="toNow" data-i18n="to_now">Now</button>
-      <button type="button" class="btn" id="toLanding" data-i18n="to_landing">Landing day</button>
-      <p class="sky-note" id="skyNote">&nbsp;</p>
-    </div>
+    <div class="sky-foot gutter"><p class="sky-note" id="skyNote">&nbsp;</p></div>
   </div>
+</section>
 
-  <div class="desk gutter">
-    <div class="map-col" id="mapCol">
+<!-- ============================== sites and dates -->
+<section class="tab pad gutter" id="tab-dates" data-tab="dates" hidden aria-labelledby="datesTitle">
+  <div class="tab-head">
+    <h2 id="datesTitle" data-i18n="strips_title">Sunlight and Earth contact, site by site</h2>
+    <p class="tab-sub" data-i18n="strips_sub">Each row is 60 days at one site. Drag the landing flag on the date line to see what a schedule slip does.</p>
+  </div>
+  <div class="strips" id="strips">
+    <div class="strips-names" id="stripNames"></div>
+    <canvas id="stripsCv" class="strips-cv"></canvas>
+  </div>
+  <ul class="legend">
+    <li><i class="sw sw-sun"></i><span data-i18n="lg_sun">Sunlight on the lander</span></li>
+    <li><i class="sw sw-earth"></i><span data-i18n="lg_earth">Earth in view</span></li>
+    <li><i class="sw sw-ok"></i><span data-i18n="lg_ok">Landing that day works</span></li>
+    <li><i class="sw sw-sleep"></i><span data-i18n="lg_sleep">Lander has to sleep</span></li>
+    <li><i class="sw sw-lost"></i><span data-i18n="lg_lost">Lander is lost</span></li>
+  </ul>
+  <div class="verdict" data-verdict aria-live="polite"></div>
+</section>
+
+<!-- ============================== map -->
+<section class="tab pad gutter" id="tab-map" data-tab="map" hidden aria-labelledby="mapTitle">
+  <div class="mapgrid">
+    <div class="stage" id="stage">
+      <div class="globe" id="globe"></div>
+      <div class="map" id="map" hidden><canvas id="mapCv"></canvas><div class="map-pins" id="mapPins"></div></div>
+      <p class="stage-msg" id="stageMsg" hidden></p>
+      <div class="stage-cam" id="camBtns">
+        <button type="button" data-cam="moon" data-i18n="cam_moon">Whole Moon</button>
+        <button type="button" data-cam="pole" data-i18n="cam_pole">South pole</button>
+        <button type="button" data-cam="top" data-i18n="cam_top">From above</button>
+        <button type="button" data-cam="site" data-i18n="cam_site">This site</button>
+      </div>
+      <div class="stage-read" id="hoverRead" hidden></div>
+    </div>
+    <div class="mapside">
       <div class="col-head">
-        <h2 data-i18n="map_title">The Moon</h2>
-        <div class="tools">
-          <div class="seg" id="viewSeg" role="group" aria-label="Map view">
-            <button type="button" data-v="3d" class="on">3D</button>
-            <button type="button" data-v="2d">2D</button>
-          </div>
-          <button type="button" class="btn btn-icon" id="expandBtn" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4.5 4.5M2.5 13.5l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-i18n="wider">Wider</span></button>
+        <h2 id="mapTitle" data-i18n="map_title">The Moon</h2>
+        <div class="seg" id="viewSeg" role="group" aria-label="Map view">
+          <button type="button" data-v="3d" class="on">3D</button>
+          <button type="button" data-v="2d">2D</button>
         </div>
       </div>
-
-      <div class="stage" id="stage">
-        <div class="globe" id="globe"></div>
-        <div class="map" id="map" hidden><canvas id="mapCv"></canvas><div class="map-pins" id="mapPins"></div></div>
-        <p class="stage-msg" id="stageMsg" hidden></p>
-        <div class="stage-cam" id="camBtns">
-          <button type="button" data-cam="moon" data-i18n="cam_moon">Whole Moon</button>
-          <button type="button" data-cam="pole" data-i18n="cam_pole">South pole</button>
-          <button type="button" data-cam="top" data-i18n="cam_top">From above</button>
-          <button type="button" data-cam="site" data-i18n="cam_site">This site</button>
-        </div>
-        <div class="stage-read" id="hoverRead" hidden></div>
-      </div>
-
       <div class="opts" id="opts3d">
         <label class="chk"><input type="checkbox" id="optSun" checked><span data-i18n="opt_sun">Real sunlight</span></label>
         <label class="chk"><input type="checkbox" id="optShadows"><span data-i18n="opt_shadows">Terrain shadows</span></label>
@@ -107,7 +188,6 @@
           <button type="button" data-v="earth" data-i18n="l_earth">Earth</button>
         </div>
       </div>
-
       <form class="ll" id="llForm" novalidate>
         <span class="ctl-k" data-i18n="ll_title">Any point</span>
         <label class="vh" for="llLat" data-i18n="fact_lat">Latitude</label>
@@ -117,80 +197,31 @@
         <button type="submit" class="btn" data-i18n="ll_go">Analyse</button>
         <span class="ll-err" id="llErr" role="alert"></span>
       </form>
-
       <ul class="map-key">
         <li><i style="background:var(--sun)"></i><span data-i18n="to_sun">Direction to the Sun now</span></li>
         <li><i style="background:var(--earth)"></i><span data-i18n="to_earth">Direction to the Earth now</span></li>
       </ul>
       <p class="cap" id="mapCap">&nbsp;</p>
     </div>
-
-    <div class="strips-col">
-      <div class="col-head">
-        <h2 data-i18n="strips_title">Sunlight and Earth contact, site by site</h2>
-      </div>
-      <div class="ctl">
-        <div class="ctl-g">
-          <span class="ctl-k" id="landK" data-i18n="landing">Landing</span>
-          <div class="stepper" role="group" aria-labelledby="landK">
-            <button type="button" id="landPrev" aria-label="One day earlier">&#x2212;</button>
-            <output id="landOut">&nbsp;</output>
-            <button type="button" id="landNext" aria-label="One day later">+</button>
-          </div>
-          <span class="slip" id="slipTxt"></span>
-          <button type="button" class="btn-link" id="slipReset" hidden data-i18n="to_plan">Back to plan</button>
-        </div>
-        <div class="ctl-g">
-          <span class="ctl-k" data-i18n="mission">Mission</span>
-          <div class="seg" id="missionSeg" role="group" aria-label="Mission length">
-            <button type="button" data-v="7">7 d</button><button type="button" data-v="14" class="on">14 d</button><button type="button" data-v="28">28 d</button>
-          </div>
-        </div>
-        <div class="ctl-g">
-          <span class="ctl-k" data-i18n="lander">Lander</span>
-          <div class="seg" id="landerSeg" role="group" aria-label="Lander size">
-            <button type="button" data-v="small" data-i18n="small">Small</button><button type="button" data-v="medium" class="on" data-i18n="medium">Medium</button><button type="button" data-v="large" data-i18n="large">Large</button>
-          </div>
-          <button type="button" class="btn-link" id="landerMore" aria-expanded="false" aria-controls="landerForm" data-i18n="lander_more">Edit</button>
-        </div>
-      </div>
-      <form class="lander-form" id="landerForm" hidden novalidate>
-        <label><span data-i18n="lf_cap">Battery (Wh)</span><input id="lfCap" type="number" min="100" step="100"></label>
-        <label><span data-i18n="lf_load">Working draw (W)</span><input id="lfLoad" type="number" min="1" step="10"></label>
-        <label><span data-i18n="lf_area">Panels (m²)</span><input id="lfArea" type="number" min="0.1" step="0.5"></label>
-        <label><span data-i18n="lf_eff">Panel efficiency (%)</span><input id="lfEff" type="number" min="5" max="45" step="1"></label>
-        <label><span data-i18n="lf_min">Lowest charge allowed (%)</span><input id="lfMin" type="number" min="0" max="80" step="5"></label>
-        <label><span data-i18n="lf_sleep">Sleep draw (W)</span><input id="lfSleep" type="number" min="0" step="1"></label>
-        <label><span data-i18n="lf_mode">Panels</span><select id="lfMode"><option value="track" data-i18n="lf_track">Turn with the Sun</option><option value="fixed" data-i18n="lf_fixed">Fixed direction</option></select></label>
-        <label><span data-i18n="lf_az">Fixed panel faces (°)</span><input id="lfAz" type="number" min="0" max="359" step="5"></label>
-        <label class="chk lf-wide"><input type="checkbox" id="lfHib"><span data-i18n="lf_hib">Can sleep through the dark and wake with the Sun</span></label>
-      </form>
-
-      <div class="strips" id="strips">
-        <div class="strips-names" id="stripNames"></div>
-        <canvas id="stripsCv" class="strips-cv"></canvas>
-      </div>
-
-      <ul class="legend" id="stripLegend">
-        <li><i class="sw sw-sun"></i><span data-i18n="lg_sun">Sunlight on the lander</span></li>
-        <li><i class="sw sw-earth"></i><span data-i18n="lg_earth">Earth in view</span></li>
-        <li><i class="sw sw-ok"></i><span data-i18n="lg_ok">Landing that day works</span></li>
-        <li><i class="sw sw-sleep"></i><span data-i18n="lg_sleep">Lander has to sleep</span></li>
-        <li><i class="sw sw-lost"></i><span data-i18n="lg_lost">Lander is lost</span></li>
-      </ul>
-
-      <div class="verdict" id="verdict" aria-live="polite"></div>
-    </div>
   </div>
 </section>
 
-<section id="site-file" class="file gutter" aria-labelledby="fileTitle">
-  <div class="file-head">
-    <h2 id="fileTitle">&nbsp;</h2>
-    <p class="file-sub" id="fileSub"></p>
+<!-- ============================== power -->
+<section class="tab pad gutter" id="tab-power" data-tab="power" hidden aria-labelledby="batTitle">
+  <div class="blk first">
+    <h3 id="batTitle">&nbsp;</h3>
+    <dl class="facts facts-sm" id="misFacts"></dl>
+    <canvas id="batCv" class="bat-cv" role="img" aria-label="Battery charge over the mission"></canvas>
+    <ul class="legend">
+      <li><i class="sw sw-soc"></i><span data-i18n="lg_soc">Battery charge</span></li>
+      <li><i class="sw sw-sun"></i><span data-i18n="lg_sun">Sunlight on the lander</span></li>
+      <li><i class="sw sw-earth"></i><span data-i18n="lg_earth">Earth in view</span></li>
+      <li><i class="sw sw-work"></i><span data-i18n="lg_work">Working</span></li>
+      <li><i class="sw sw-asleep"></i><span data-i18n="lg_asleep">Asleep</span></li>
+      <li><i class="sw sw-dead"></i><span data-i18n="lg_dead">Lost</span></li>
+    </ul>
+    <p class="advice" id="batText"></p>
   </div>
-  <dl class="facts" id="facts"></dl>
-
   <div class="file-row">
     <div class="blk">
       <h3 id="nowTitle">&nbsp;</h3>
@@ -207,22 +238,27 @@
       </div>
     </div>
   </div>
-
   <div class="blk">
-    <h3 id="batTitle">&nbsp;</h3>
-    <dl class="facts facts-sm" id="misFacts"></dl>
-    <canvas id="batCv" class="bat-cv" role="img" aria-label="Battery charge over the mission"></canvas>
-    <ul class="legend">
-      <li><i class="sw sw-soc"></i><span data-i18n="lg_soc">Battery charge</span></li>
-      <li><i class="sw sw-sun"></i><span data-i18n="lg_sun">Sunlight on the lander</span></li>
-      <li><i class="sw sw-earth"></i><span data-i18n="lg_earth">Earth in view</span></li>
-      <li><i class="sw sw-work"></i><span data-i18n="lg_work">Working</span></li>
-      <li><i class="sw sw-asleep"></i><span data-i18n="lg_asleep">Asleep</span></li>
-      <li><i class="sw sw-dead"></i><span data-i18n="lg_dead">Lost</span></li>
-    </ul>
-    <p class="advice" id="batText"></p>
+    <h3 data-i18n="lander_title">The lander</h3>
+    <form class="lander-form" id="landerForm" novalidate>
+      <label><span data-i18n="lf_cap">Battery (Wh)</span><input id="lfCap" type="number" min="100" step="100"></label>
+      <label><span data-i18n="lf_load">Working draw (W)</span><input id="lfLoad" type="number" min="1" step="10"></label>
+      <label><span data-i18n="lf_area">Panels (m²)</span><input id="lfArea" type="number" min="0.1" step="0.5"></label>
+      <label><span data-i18n="lf_eff">Panel efficiency (%)</span><input id="lfEff" type="number" min="5" max="45" step="1"></label>
+      <label><span data-i18n="lf_min">Lowest charge allowed (%)</span><input id="lfMin" type="number" min="0" max="80" step="5"></label>
+      <label><span data-i18n="lf_sleep">Sleep draw (W)</span><input id="lfSleep" type="number" min="0" step="1"></label>
+      <label><span data-i18n="lf_mode">Panels</span><select id="lfMode"><option value="track" data-i18n="lf_track">Turn with the Sun</option><option value="fixed" data-i18n="lf_fixed">Fixed direction</option></select></label>
+      <label><span data-i18n="lf_az">Fixed panel faces (°)</span><input id="lfAz" type="number" min="0" max="359" step="5"></label>
+      <label class="chk lf-wide"><input type="checkbox" id="lfHib"><span data-i18n="lf_hib">Can sleep through the dark and wake with the Sun</span></label>
+    </form>
+    <p class="conf" data-i18n="lander_note">The three sizes are illustrative, not the specifications of a real lander. Panels stand upright because the polar Sun stays within a few degrees of the horizon.</p>
   </div>
+</section>
 
+<!-- ============================== slope and terrain -->
+<section class="tab pad gutter" id="tab-slope" data-tab="slope" hidden aria-labelledby="slopeTitle">
+  <div class="tab-head"><h2 id="slopeTitle" data-i18n="slope_title">Slope and terrain</h2></div>
+  <dl class="facts" id="facts"></dl>
   <div class="file-grid">
     <div class="file-map blk">
       <div class="col-head">
@@ -237,31 +273,77 @@
       <div class="amap"><canvas id="fileCv"></canvas><p class="stage-msg" id="fileMsg" hidden></p></div>
       <div class="amap-legend" id="fileLegend"></div>
     </div>
+    <div class="blk">
+      <div class="col-head">
+        <h3 data-i18n="circle_title">Slopes inside the landing circle</h3>
+        <div class="seg" id="circleSeg" role="group" aria-label="Landing circle radius">
+          <button type="button" data-v="500">0.5 km</button><button type="button" data-v="1000" class="on">1 km</button><button type="button" data-v="2000">2 km</button>
+        </div>
+      </div>
+      <div id="circleBox"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ice and rover -->
+<section class="tab pad gutter" id="tab-ice" data-tab="ice" hidden aria-labelledby="iceTitle">
+  <div class="tab-head">
+    <h2 id="iceTitle" data-i18n="ice_title">Water ice nearby</h2>
+    <p class="tab-sub" data-i18n="ice_sub">Distance from the landing site to shadowed regions where ice was detected, and whether a rover can drive there.</p>
+  </div>
+  <div class="file-grid">
+    <div class="blk">
+      <div class="col-head"><h3 id="roverTitle" data-i18n="rover_title">Rover route to the ice</h3></div>
+      <div class="amap"><canvas id="roverCv"></canvas><p class="stage-msg" id="roverMsg" hidden></p></div>
+      <ul class="legend">
+        <li><i class="sw sw-route"></i><span data-i18n="rv_lg_route">Route within the slope limit</span></li>
+        <li><i class="sw sw-ice"></i><span data-i18n="rv_lg_ice">Shadowed region with ice detections</span></li>
+        <li><i class="sw sw-steep"></i><span data-i18n="rv_lg_steep">Steeper than the rover’s limit</span></li>
+      </ul>
+    </div>
     <div class="file-side">
-      <div class="blk geo">
-        <h3 data-i18n="geo_title">Geology</h3>
-        <div id="geoNotes"></div>
-        <div id="rockMix"></div>
-        <figure class="geo-fig" id="geoFig"></figure>
+      <div class="blk">
+        <h3 data-i18n="rover_set">The rover</h3>
+        <form class="lander-form rover-form" id="roverForm" novalidate>
+          <label><span data-i18n="rv_slope">Steepest slope it can drive (°)</span><input id="rvSlope" type="number" min="3" max="35" step="1" value="15"></label>
+          <label><span data-i18n="rv_speed">Average speed (km/h)</span><input id="rvSpeed" type="number" min="0.05" max="10" step="0.05" value="0.4"></label>
+        </form>
+        <div id="roverOut"></div>
       </div>
       <div class="blk">
-        <h3 data-i18n="ice_title">Water ice nearby</h3>
+        <h3 data-i18n="ice_list">Nearest regions</h3>
         <div class="tbl-wrap" id="iceBox"></div>
       </div>
     </div>
   </div>
 </section>
 
-<section id="method" class="method gutter" aria-labelledby="methodTitle">
-  <h2 id="methodTitle" data-i18n="method_title">How the numbers are made</h2>
-  <div class="method-grid">
-    <p data-i18n="m1">Terrain comes from the LOLA 80 m south-pole elevation model (NASA GSFC). From each site we cast 2,880 rays out to 300 km over the curved Moon and keep the highest terrain in every quarter degree of azimuth. That outline is the horizon you see in the panorama.</p>
-    <p data-i18n="m2">Sun and Earth positions come from NAIF SPICE (DE421) in the Moon-fixed frame, hour by hour, so libration and the lunar seasons are included. The Sun counts as up by the share of its disc clear of the terrain, the Earth by its centre.</p>
-    <p data-i18n="m3">The lander is an hourly energy balance: Sun-tracking panels, a battery, a working load and a sleep mode that keeps the heaters on. Research and education prototype, not flight certification. Earth visibility is geometric, not radio link quality.</p>
+<!-- ============================== rocks -->
+<section class="tab pad gutter" id="tab-rocks" data-tab="rocks" hidden aria-labelledby="rocksTitle">
+  <div class="tab-head"><h2 id="rocksTitle" data-i18n="geo_title">Rocks and geology</h2></div>
+  <div class="file-grid rocks-grid">
+    <div class="blk geo">
+      <h3 data-i18n="geo_notes">Notes from the geology team</h3>
+      <div id="geoNotes"></div>
+      <div id="rockMix"></div>
+    </div>
+    <div class="blk">
+      <h3 data-i18n="geo_fig">Team analysis map</h3>
+      <figure class="geo-fig" id="geoFig"></figure>
+    </div>
   </div>
-  <p class="cap" data-i18n="scope">The search across all 11,844 candidate sites and the full water-ice atlas are still in the previous version, linked at the top, and move over next.</p>
 </section>
+
+<!-- ============================== guide -->
+<section class="tab pad gutter" id="tab-guide" data-tab="guide" hidden>
+  <div class="guide" id="guideBody"></div>
+</section>
+
 </main>
+
+<footer class="foot gutter">
+  <p data-i18n="foot">Terrain: LOLA 80 m (NASA GSFC). Sun and Earth: NAIF SPICE DE421. Ice: Lemelin et al. 2021. Research and education prototype, not flight certification.</p>
+</footer>
 
 <script src="config.js"></script>
 <script src="js/sunearth.js"></script>
@@ -272,7 +354,9 @@
 <script src="nav/i18n.js"></script>
 <script src="nav/horizon.js"></script>
 <script src="nav/data.js"></script>
+<script src="nav/rover.js"></script>
 <script src="nav/sky.js"></script>
+<script src="nav/ring.js"></script>
 <script src="nav/strips.js"></script>
 <script src="nav/map.js"></script>
 <script src="nav/sitefile.js"></script>

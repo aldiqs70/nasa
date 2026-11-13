@@ -74,7 +74,17 @@
     this.size = Math.max(1, r.width); this.dpr = dpr; this.cv.width = this.cv.height = Math.round(this.size * dpr);
   };
 
-  SiteFile.prototype.draw = function (site, layer) {
+  // Slopes inside a landing circle of the given radius around the site (80 m cells).
+  SiteFile.prototype.circle = function (site, radiusM) {
+    const d = this.get(site); if (!d || d.none) return null;
+    const N = d.N, res = NAV.data.crop.reliefRes, c = (N - 1) / 2, rr = radiusM / res, v = [];
+    for (let r = 0; r < N; r++) for (let k = 0; k < N; k++) if ((r - c) * (r - c) + (k - c) * (k - c) <= rr * rr) v.push(d.slope[r * N + k]);
+    v.sort((a, b) => a - b);
+    const share = SLOPE_CLASSES.map((cl, i) => { const lo = i ? SLOPE_CLASSES[i - 1][0] : -1; return 100 * v.filter((x) => x > lo && x <= cl[0]).length / v.length; });
+    return { n: v.length, share, median: v[v.length >> 1], p90: v[Math.floor(v.length * 0.9)], max: v[v.length - 1], within: 100 * v.filter((x) => x <= ZONE.slope).length / v.length };
+  };
+
+  SiteFile.prototype.draw = function (site, layer, circleM) {
     const d = this.get(site), g = this.ctx, S = this.size;
     g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); g.fillStyle = '#000'; g.fillRect(0, 0, S, S);
     if (!d || d.none) return;
@@ -101,6 +111,7 @@
     g.strokeStyle = 'rgba(255,255,255,0.13)'; g.lineWidth = 1; g.beginPath();
     for (let k = 4; k < 24; k += 4) { const p = Math.round(k * km) + 0.5; g.moveTo(p, 0); g.lineTo(p, S); g.moveTo(0, p); g.lineTo(S, p); }
     g.stroke();
+    if (circleM) { g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 4; g.beginPath(); g.arc(S / 2, S / 2, circleM / 1000 * km, 0, 6.2832); g.stroke(); g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.setLineDash([5, 4]); g.beginPath(); g.arc(S / 2, S / 2, circleM / 1000 * km, 0, 6.2832); g.stroke(); g.setLineDash([]); }
     // the site
     const c = S / 2; g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,0.75)';
     for (const pass of [0, 1]) {

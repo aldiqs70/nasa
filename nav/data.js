@@ -4,7 +4,7 @@
 (function () {
   const NAV = (window.NAV = window.NAV || {});
   const DAY = 86400e3, D2R = Math.PI / 180, R_KM = 1737.4;
-  const WINDOW_DAYS = 60, MAX_MISSION = 28, MAST = 2;
+  const WINDOW_DAYS = 60, MAX_MISSION = 60, MAST = 2;
   NAV.PRESETS = {
     small: { capWh: 1500, loadW: 60, area: 1 },
     medium: { capWh: 5000, loadW: 200, area: 3 },
@@ -85,7 +85,7 @@
   // nearest ice-bearing shadowed regions: [{ km, p }]
   NAV.iceNear = function (site, n) {
     const X = NAV.X; if (!X || !X.iceMap || site.lat > -78) return [];
-    return X.ice.psr.map((p, i) => ({ p, km: X.iceMap.distanceOne(i, site.x, site.y) })).sort((a, b) => a.km - b.km).slice(0, n || 1);
+    return X.ice.psr.map((p, i) => ({ p, i, km: X.iceMap.distanceOne(i, site.x, site.y) })).sort((a, b) => a.km - b.km).slice(0, n || 1);
   };
   NAV.iceName = (p) => p.name || NAV.T('ice_region', { n: p.id });
   // 1 km long-term grids (2026-2030), % or null
@@ -127,6 +127,12 @@
     }
     return (site.out[key] = res);
   };
+  // Hour-by-hour lander state (1 working, 2 asleep, 3 lost) for one landing day.
+  NAV.missionState = function (site, d, missionDays) {
+    const key = 's' + landerKey() + ':' + missionDays + ':' + d;
+    return site.out[key] || (site.out[key] = Planner.operate(NAV.gen(site), 1, NAV.lander, d * 24, d * 24 + missionDays * 24).state);
+  };
+  NAV.MAX_MISSION = MAX_MISSION;
   const good = (o) => o.cls === 'ok' && !o.dark;
   NAV.isGood = good;
   // How many more days the landing can slip and still be good (Infinity = to the end of the window).
