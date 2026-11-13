@@ -399,6 +399,7 @@
 
   let lang = 'en';
   try { lang = localStorage.getItem('eol-lang') || lang; } catch (e) { /* storage may be blocked */ }
+  const asked = new URLSearchParams(location.search).get('lang'); if (asked === 'ar' || asked === 'en') lang = asked;
   NAV.lang = lang === 'ar' ? 'ar' : 'en';
   fillLander();
   setLang(NAV.lang);

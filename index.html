@@ -1,404 +1,283 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>حافة النور · Edge of Light</title>
-<meta name="description" content="Explore sunlight, Earth contact and water ice at the lunar south pole, and plan a lander mission. NASA Space Apps 2026 · CLPS Lunar Mission Browser.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%231f1b24'/%3E%3Cpath d='M20 5a12 12 0 1 0 0 22A10 10 0 1 1 20 5z' fill='%23d6a451'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Edge of Light</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script>
-  // always load the newest files after an update (avoid stale browser cache)
-  window.__v = Date.now();
-  document.write('<link rel="stylesheet" href="css/app.css?v=' + window.__v + '">');
-  document.write('<script src="js/i18n.js?v=' + window.__v + '"><\/script>');
-</script>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="nav/app.css">
 </head>
 <body>
 
-<!-- ============================== TOP BAR ============================== -->
-<header class="topbar">
-  <div class="brand" onclick="location.hash='#home'">
-    <svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#241f2c" stroke="rgba(194,184,200,.3)"/><path d="M20 5a12 12 0 1 0 0 22A10 10 0 1 1 20 5z" fill="#d6a451"/></svg>
-    <div><b>حافة النور</b><br><span>Edge of Light · Lunar South Pole</span></div>
-  </div>
-  <nav class="nav" id="nav">
-    <a href="#home" data-v="home">الرئيسية</a>
-    <a href="#explore" data-v="explore">المستكشف ثلاثي الأبعاد</a>
-    <a href="#planner" data-v="planner">مخطط المهمة</a>
-    <a href="#compare" data-v="compare">مقارنة المواقع</a>
-    <a href="#ice" data-v="ice">مواقع الجليد</a>
-    <a href="#about" data-v="about">المنهجية والمصادر</a>
+<header class="bar gutter">
+  <a class="brand" href="#navigator">
+    <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="16" r="9.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20.7" cy="9.3" r="3.2" fill="var(--sun)"/></svg>
+    <span class="brand-name" data-i18n="brand">Edge of Light</span>
+    <span class="brand-tag" data-i18n="tagline">Lunar landing site navigator</span>
+  </a>
+  <nav class="bar-nav" aria-label="Sections">
+    <a href="#navigator" data-i18n="nav_navigator">Navigator</a>
+    <a href="#site-file" data-i18n="nav_file">Site file</a>
+    <a href="#method" data-i18n="nav_method">Method</a>
+    <a href="classic.html" data-i18n="nav_classic">Previous version</a>
   </nav>
-  <div class="spacer"></div>
-  <button class="lang-btn" id="langBtn" type="button" onclick="I18N.toggle()">English</button>
-  <a class="pill-btn" href="#planner"><span class="dot"></span>خطّط مهمتك</a>
-  <button class="menu-btn" id="menuBtn" aria-label="القائمة"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#efe9f3" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <button type="button" class="btn" id="langBtn" lang="ar">العربية</button>
 </header>
 
 <main>
-<!-- ============================== HOME ============================== -->
-<section class="view" id="view-home">
-  <div class="hero" id="hero">
-    <canvas class="stars" id="heroCanvas"></canvas>
-    <div class="hero-gl-host" id="heroGL"></div>
+<section id="navigator" aria-labelledby="skyTitle">
 
-    <div class="body-label" id="lblSun"><i></i><span>الشمس</span></div>
-    <div class="body-label" id="lblEarth"><i></i><span>الأرض</span></div>
-    <div class="body-label" id="lblMoon"><i></i><span>القمر</span></div>
-
-    <aside class="glass sys-panel" id="sysPanel">
-      <div class="sys-brand">
-        <h1>حافة النور</h1>
-        <p>القطب الجنوبي للقمر، المكان الوحيد اللي الشمس فيه بتلفّ حوالين الأفق بدل ما تطلع وتغيب.</p>
+  <div class="sky">
+    <div class="sky-head gutter">
+      <div class="site-id">
+        <h1 class="vh" id="skyTitle" data-i18n="sky_title">The sky from the landing site</h1>
+        <label class="vh" for="siteSel" data-i18n="site">Landing site</label>
+        <select id="siteSel" class="site-sel"></select>
+        <div class="site-coord" id="siteCoord">&nbsp;</div>
       </div>
-      <div class="sys-sec">
-        <div class="sys-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>الجسم المعروض</div>
-        <div class="seg seg-pill" id="bodySeg"><button data-b="moon" class="on">القمر</button><button data-b="earth">الأرض</button><button data-b="sun">الشمس</button></div>
-      </div>
-      <div class="sys-sec">
-        <div class="sys-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>خيارات العرض</div>
-        <label class="toggle">مسارات المدارات<input type="checkbox" data-t="orbits" checked><i></i></label>
-        <label class="toggle">الأسماء<input type="checkbox" data-t="labels" checked><i></i></label>
-        <label class="toggle">منطقة القطب الجنوبي<input type="checkbox" data-t="pole" checked><i></i></label>
-        <label class="toggle">شبكة الإحداثيات<input type="checkbox" data-t="grid"><i></i></label>
-      </div>
-      <div class="sys-cta">
-        <a class="btn gold" href="#explore">استكشف القطب ثلاثي الأبعاد</a>
-        <a class="btn ghost" href="#planner">خطّط مهمة هبوط</a>
-      </div>
-    </aside>
-
-    <aside class="glass body-card" id="moonCard">
-      <div class="bc-head"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><b id="bcTitle">تفاصيل القمر</b></div>
-      <div class="bc-top"><canvas id="phaseCanvas"></canvas><dl class="kv" id="bcStatic"></dl></div>
-      <div class="bc-div"></div>
-      <dl class="kv" id="bcLive"></dl>
-      <p class="bc-note" id="phaseName"></p>
-    </aside>
-
-    <div class="time-pill" id="heroTime">
-      <div class="t"><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="heroDate">—</span></span><span class="sep"></span><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="heroClock">—</span> UTC</span></div>
-      <button class="round-btn" id="heroPlay" title="شغّل الزمن"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
-    </div>
-  </div>
-
-  <div class="wrap">
-    <div class="page-head"><div><h1>القطب الجنوبي بنظرة وحدة</h1>
-      <p>كل الأرقام بالموقع محسوبة من بيانات ناسا الحقيقية: تضاريس LOLA (دقة 80 م)، ومواقع الشمس والأرض من JPL، ومناطق الجليد من رصدات Moon Mineralogy Mapper.</p></div></div>
-    <div class="feature-grid">
-      <div class="card pad" style="grid-row: span 2">
-        <div class="sec-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>تصنيف مواقع الهبوط على المدى الطويل (2026 – 2030)</div>
-        <canvas class="mini-map" id="homeMap"></canvas>
-        <div class="legend" style="margin-top:10px">
-          <span><i style="background:var(--safe)"></i>مناسب</span><span><i style="background:var(--caution)"></i>بحذر</span><span><i style="background:var(--risky)"></i>صعب</span><span><i style="background:var(--ice)"></i>جليد مرصود</span>
+      <div class="readouts" aria-live="off">
+        <div class="ro">
+          <div class="ro-k"><i class="dot dot-sun" aria-hidden="true"></i><span id="roSunK">Sunset in</span></div>
+          <div class="ro-v" id="roSunV">&nbsp;</div>
+          <div class="ro-s" id="roSunS">&nbsp;</div>
         </div>
-        <p class="note" style="margin:8px 0 0">مناسب: الشمس ≥ 50% من الوقت، والأرض ظاهرة ≥ 50%، والانحدار ≤ 8°. بحذر: الشمس ≥ 30% والانحدار ≤ 15°. بمخطط المهمة بتختار تواريخك ومركبتك، والتصنيف بيتغير حسبهم.</p>
+        <div class="ro">
+          <div class="ro-k"><i class="dot dot-earth" aria-hidden="true"></i><span id="roEarthK">Earthset in</span></div>
+          <div class="ro-v" id="roEarthV">&nbsp;</div>
+          <div class="ro-s" id="roEarthS">&nbsp;</div>
+        </div>
+        <div class="ro">
+          <div class="ro-k"><i class="dot dot-power" aria-hidden="true"></i><span data-i18n="power">Panel output</span></div>
+          <div class="ro-v" id="roPowV">&nbsp;</div>
+          <div class="ro-s" id="roPowS">&nbsp;</div>
+        </div>
       </div>
-      <a class="card feature" href="#explore"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg></div>
-        <h3>أعلى إضاءة لقيناها</h3><div class="stat-big" id="stLit">—</div><p>من وقت السنة تكون الشمس ظاهرة، على شبكة كل 1 كم. وقيعان الفوهات الكبيرة 0% طول الوقت.</p></a>
-      <a class="card feature" href="#ice"><div class="ico" style="color:var(--ice)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 6l16 12M20 6L4 18"/></svg></div>
-        <h3>مناطق ظل دائم فيها جليد</h3><div class="stat-big" id="stIce">169</div><p>رصدها جهاز M3 من ناسا، مع درجات الحرارة والهيدروجين لكل منطقة (Lemelin et al. 2021).</p></a>
-      <a class="card feature" href="#planner"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21l9-18 9 18M7 13h10"/></svg></div>
-        <h3>مخطط المهمة</h3><p>اختار نافذة الهبوط ومدة المهمة والبطارية والاستهلاك، وبنحسبلك أفضل 3 مواقع بالقطب، مع القرب من الجليد.</p></a>
-      <a class="card feature" href="#compare"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"/></svg></div>
-        <h3>مقارنة موقعين</h3><p>الإضاءة والاتصال والطاقة وخط الأفق جنب بعض، لنفس الفترة ونفس المركبة.</p></a>
     </div>
-  </div>
-  <div class="foot">حافة النور · فريق شباب شهاب · الجمعية الفلكية الأردنية · NASA Space Apps Challenge 2026<br>البيانات من ناسا (LOLA, LRO, M3, Lunar Prospector, NAIF/JPL). نموذج تعليمي وبحثي، مش أداة تخطيط رسمية.</div>
-</section>
 
-<!-- ============================== 3D EXPLORER ============================== -->
-<section class="view" id="view-explore">
-  <div id="cesium"></div>
-  <div class="float card status-chip hidden" id="status"></div>
-  <div class="float card err-box" id="err"></div>
+    <canvas id="skyCv" class="sky-cv" tabindex="0" role="img" aria-label="Horizon panorama"></canvas>
 
-  <button class="float round-btn ghost layers-btn" id="layersBtn" title="الطبقات"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l10 5-10 5L2 7z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></button>
-  <div class="float card layers-panel" id="layersPanel">
-    <div class="sec-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>زاوية الرؤية</div>
-    <div class="views"><button class="btn sm" data-cam="global">القمر</button><button class="btn sm" data-cam="pole">القطب</button><button class="btn sm" data-cam="top">من فوق</button></div>
-    <label class="fld"><span>روح لموقع</span><select class="inp" id="siteSel"></select></label>
-    <div class="sec-title" style="margin-top:16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l10 5-10 5L2 7z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>الطبقات</div>
-    <label class="toggle">إضاءة الشمس الحقيقية<input type="checkbox" id="sunLight"><i></i></label>
-    <label class="toggle">ظلال ثلاثية الأبعاد<input type="checkbox" id="shadows"><i></i></label>
-    <label class="toggle">جودة عالية (أبطأ)<input type="checkbox" id="hiQ"><i></i></label>
-    <label class="toggle">مواقع الفريق<input type="checkbox" id="lySites" checked><i></i></label>
-    <label class="toggle">مناطق الجليد<input type="checkbox" id="lyIce" checked><i></i></label>
-    <label class="toggle">أفضل 3 مواقع من المخطط<input type="checkbox" id="lyTop" checked><i></i></label>
-    <p class="note" style="margin:10px 0 0">اضغط على أي نقطة على القمر عشان تحللها. الحسابات بتاخد الجبال المحيطة لمسافة 300 كم بعين الاعتبار.</p>
-  </div>
-
-  <div class="float card details-panel" id="detailsPanel">
-    <div class="sec-title" style="margin-bottom:4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/></svg><span id="dTitle">تفاصيل النقطة</span></div>
-    <div class="muted small num" id="dCoords" style="text-align:right"></div>
-    <div id="dEmpty" class="note" style="margin-top:10px">اضغط على أي نقطة بالقطب الجنوبي، أو اختار موقع من القائمة.</div>
-    <div id="dBody" class="hidden">
-      <dl class="kv" style="margin-top:12px">
-        <dt>الارتفاع</dt><dd id="dElev">—</dd>
-        <dt>الانحدار</dt><dd id="dSlope">—</dd>
-        <dt>البعد عن القطب</dt><dd id="dPole">—</dd>
-        <dt>أقرب جليد مرصود</dt><dd id="dIce">—</dd>
-      </dl>
-      <h3 style="margin:14px 0 8px; font-size:13.5px; color:var(--lavender)">الآن بهاي اللحظة</h3>
-      <div style="display:flex; gap:12px; align-items:center">
-        <canvas id="compass" style="width:118px;height:118px;flex:none"></canvas>
-        <dl class="kv" style="flex:1">
-          <dt>الشمس</dt><dd id="dSun">—</dd>
-          <dt></dt><dd id="dSunState"></dd>
-          <dt>الأرض</dt><dd id="dEarth">—</dd>
-          <dt></dt><dd id="dEarthState"></dd>
-          <dt>طاقة اللوح</dt><dd id="dPower">—</dd>
-        </dl>
-      </div>
-      <div class="legend" style="margin-top:6px; font-size:11.5px"><span><i style="background:#ffd98a"></i>اتجاه الشمس = وين توجّه اللوح</span><span><i style="background:#6fa8dc"></i>الأرض = وين توجّه الهوائي</span></div>
-      <div style="display:flex; gap:12px; align-items:center; margin-top:12px">
-        <canvas id="earthView" style="width:64px;height:64px;flex:none"></canvas>
-        <div class="note" id="earthNote">—</div>
-      </div>
-      <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap">
-        <button class="btn gold sm" id="btnAnalyse">تحليل كامل</button>
-        <button class="btn sm" id="btnToCompare">قارن</button>
-        <button class="btn sm" id="btnToBattery">فحص البطارية</button>
-      </div>
+    <div class="sky-foot gutter">
+      <button type="button" class="btn btn-play" id="playBtn" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path id="playIcon" d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span id="playTxt" data-i18n="play">Play</span></button>
+      <div class="clock" id="clock">&nbsp;</div>
+      <button type="button" class="btn" id="toNow" data-i18n="to_now">Now</button>
+      <button type="button" class="btn" id="toLanding" data-i18n="to_landing">Landing day</button>
+      <p class="sky-note" id="skyNote">&nbsp;</p>
     </div>
   </div>
 
-  <div class="float card readout" id="readout"><span>خط العرض <b id="rLat">—</b></span><span>خط الطول <b id="rLon">—</b></span><span>الارتفاع <b id="rElev">—</b></span><span>الانحدار <b id="rSlope">—</b></span></div>
-
-  <div class="time-pill" id="exTime">
-    <input type="date" class="inp" id="dateIn" style="width:150px; padding:6px 10px">
-    <input type="range" id="hourIn" min="0" max="23" step="1">
-    <span class="num" id="clock" style="font-size:13px; min-width:64px">--:00 UTC</span>
-    <button class="round-btn ghost" id="btnNow" title="الآن"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
-    <button class="round-btn" id="btnPlay" title="تشغيل"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
-  </div>
-
-  <div class="card sheet" id="sheet">
-    <div class="sheet-head">
-      <div><b id="sTitle" style="font-size:16px">تحليل الموقع</b> <span class="muted small num" id="sSub"></span></div>
-      <div style="display:flex; gap:8px; align-items:center">
-        <select class="inp" id="period" style="width:auto; padding:7px 10px">
-          <option value="720">30 يوم من التاريخ المختار</option>
-          <option value="2160">90 يوم</option>
-          <option value="8760" selected>سنة كاملة</option>
-          <option value="all">2026 – 2030 كاملة</option>
-        </select>
-        <button class="close" id="sheetClose" title="إغلاق">×</button>
-      </div>
-    </div>
-    <div class="tabs" id="sheetTabs">
-      <button data-t="light" class="on">الإضاءة والاتصال</button>
-      <button data-t="panel">اتجاه الألواح الشمسية</button>
-      <button data-t="battery">البطارية</button>
-      <button data-t="ice">الجليد القريب</button>
-      <button data-t="geo">الصخور والجيولوجيا</button>
-    </div>
-    <div data-p="light">
-      <div class="metrics" style="grid-template-columns:repeat(6,1fr)">
-        <div class="metric"><div class="lab">الشمس ظاهرة</div><div class="val" id="mLit">—</div></div>
-        <div class="metric"><div class="lab">أطول ظلمة</div><div class="val" id="mDark">—</div></div>
-        <div class="metric"><div class="lab">متوسط الطاقة</div><div class="val" id="mPow">—</div></div>
-        <div class="metric"><div class="lab">الأرض ظاهرة</div><div class="val" id="mComm">—</div></div>
-        <div class="metric"><div class="lab">أطول انقطاع</div><div class="val" id="mGap">—</div></div>
-        <div class="metric"><div class="lab">شمس وأرض معاً</div><div class="val" id="mBoth">—</div></div>
-      </div>
-      <div class="grid2" style="margin-top:12px">
-        <div><div class="muted small" style="margin-bottom:4px">خط الأفق الحقيقي من الموقع (360°) ومسار الشمس <span style="color:var(--gold)">●</span> والأرض <span style="color:var(--earth)">●</span></div><canvas class="chart" id="cHorizon"></canvas></div>
-        <div><div class="muted small" style="margin-bottom:4px">مع الوقت: الشريط الأصفر = شمس، الأزرق = اتصال، والخطوط = ارتفاعهم بالدرجات</div><canvas class="chart" id="cTimeline"></canvas></div>
-      </div>
-    </div>
-    <div data-p="panel" class="hidden">
-      <div class="grid2" style="align-items:center">
-        <div style="display:flex; justify-content:center"><canvas id="cRose" style="width:260px"></canvas></div>
-        <div>
-          <div class="callout info" id="panelAdvice">—</div>
-          <div class="metrics" style="margin-top:12px">
-            <div class="metric"><div class="lab">لوح يلف مع الشمس</div><div class="val" id="pTrack">—</div></div>
-            <div class="metric"><div class="lab">لوح ثابت بأفضل اتجاه</div><div class="val" id="pFixed">—</div><div class="ref" id="pFixedAz"></div></div>
-            <div class="metric"><div class="lab">لوحين ظهر لظهر</div><div class="val" id="pTwo">—</div></div>
+  <div class="desk gutter">
+    <div class="map-col" id="mapCol">
+      <div class="col-head">
+        <h2 data-i18n="map_title">The Moon</h2>
+        <div class="tools">
+          <div class="seg" id="viewSeg" role="group" aria-label="Map view">
+            <button type="button" data-v="3d" class="on">3D</button>
+            <button type="button" data-v="2d">2D</button>
           </div>
-          <p class="note">الشكل يوضّح كم طاقة بيعطي لوح عمودي ثابت لو وجّهته لكل اتجاه. بالقطب الشمس بتلف حوالين الأفق مرة كل شهر تقريباً، فاللوح الثابت بيضيّع جزء كبير من الطاقة. عشان هيك أغلب المركبات القطبية بتستخدم لوح بيلف، أو ألواح على أكثر من جهة.</p>
+          <button type="button" class="btn btn-icon" id="expandBtn" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4.5 4.5M2.5 13.5l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-i18n="wider">Wider</span></button>
         </div>
       </div>
+
+      <div class="stage" id="stage">
+        <div class="globe" id="globe"></div>
+        <div class="map" id="map" hidden><canvas id="mapCv"></canvas><div class="map-pins" id="mapPins"></div></div>
+        <p class="stage-msg" id="stageMsg" hidden></p>
+        <div class="stage-cam" id="camBtns">
+          <button type="button" data-cam="moon" data-i18n="cam_moon">Whole Moon</button>
+          <button type="button" data-cam="pole" data-i18n="cam_pole">South pole</button>
+          <button type="button" data-cam="top" data-i18n="cam_top">From above</button>
+          <button type="button" data-cam="site" data-i18n="cam_site">This site</button>
+        </div>
+        <div class="stage-read" id="hoverRead" hidden></div>
+      </div>
+
+      <div class="opts" id="opts3d">
+        <label class="chk"><input type="checkbox" id="optSun" checked><span data-i18n="opt_sun">Real sunlight</span></label>
+        <label class="chk"><input type="checkbox" id="optShadows"><span data-i18n="opt_shadows">Terrain shadows</span></label>
+        <label class="chk"><input type="checkbox" id="optFine"><span data-i18n="opt_fine">Finer detail</span></label>
+        <label class="chk"><input type="checkbox" id="optIce" checked><span data-i18n="opt_ice">Ice regions</span></label>
+      </div>
+      <div class="opts" id="opts2d" hidden>
+        <div class="seg" id="mapSeg" role="group" aria-label="Map layer">
+          <button type="button" data-v="relief" data-i18n="l_relief">Relief</button>
+          <button type="button" data-v="sun" class="on" data-i18n="l_sun">Sunlight</button>
+          <button type="button" data-v="earth" data-i18n="l_earth">Earth</button>
+        </div>
+      </div>
+
+      <form class="ll" id="llForm" novalidate>
+        <span class="ctl-k" data-i18n="ll_title">Any point</span>
+        <label class="vh" for="llLat" data-i18n="fact_lat">Latitude</label>
+        <input id="llLat" inputmode="decimal" autocomplete="off" placeholder="-89.45" size="8">
+        <label class="vh" for="llLon" data-i18n="fact_lon">Longitude</label>
+        <input id="llLon" inputmode="decimal" autocomplete="off" placeholder="-137.4" size="8">
+        <button type="submit" class="btn" data-i18n="ll_go">Analyse</button>
+        <span class="ll-err" id="llErr" role="alert"></span>
+      </form>
+
+      <ul class="map-key">
+        <li><i style="background:var(--sun)"></i><span data-i18n="to_sun">Direction to the Sun now</span></li>
+        <li><i style="background:var(--earth)"></i><span data-i18n="to_earth">Direction to the Earth now</span></li>
+      </ul>
+      <p class="cap" id="mapCap">&nbsp;</p>
     </div>
-    <div data-p="battery" class="hidden"><div id="batteryBox"></div></div>
-    <div data-p="ice" class="hidden"><div id="iceNear"></div></div>
-    <div data-p="geo" class="hidden"><div id="geoBox"></div></div>
+
+    <div class="strips-col">
+      <div class="col-head">
+        <h2 data-i18n="strips_title">Sunlight and Earth contact, site by site</h2>
+      </div>
+      <div class="ctl">
+        <div class="ctl-g">
+          <span class="ctl-k" id="landK" data-i18n="landing">Landing</span>
+          <div class="stepper" role="group" aria-labelledby="landK">
+            <button type="button" id="landPrev" aria-label="One day earlier">&#x2212;</button>
+            <output id="landOut">&nbsp;</output>
+            <button type="button" id="landNext" aria-label="One day later">+</button>
+          </div>
+          <span class="slip" id="slipTxt"></span>
+          <button type="button" class="btn-link" id="slipReset" hidden data-i18n="to_plan">Back to plan</button>
+        </div>
+        <div class="ctl-g">
+          <span class="ctl-k" data-i18n="mission">Mission</span>
+          <div class="seg" id="missionSeg" role="group" aria-label="Mission length">
+            <button type="button" data-v="7">7 d</button><button type="button" data-v="14" class="on">14 d</button><button type="button" data-v="28">28 d</button>
+          </div>
+        </div>
+        <div class="ctl-g">
+          <span class="ctl-k" data-i18n="lander">Lander</span>
+          <div class="seg" id="landerSeg" role="group" aria-label="Lander size">
+            <button type="button" data-v="small" data-i18n="small">Small</button><button type="button" data-v="medium" class="on" data-i18n="medium">Medium</button><button type="button" data-v="large" data-i18n="large">Large</button>
+          </div>
+          <button type="button" class="btn-link" id="landerMore" aria-expanded="false" aria-controls="landerForm" data-i18n="lander_more">Edit</button>
+        </div>
+      </div>
+      <form class="lander-form" id="landerForm" hidden novalidate>
+        <label><span data-i18n="lf_cap">Battery (Wh)</span><input id="lfCap" type="number" min="100" step="100"></label>
+        <label><span data-i18n="lf_load">Working draw (W)</span><input id="lfLoad" type="number" min="1" step="10"></label>
+        <label><span data-i18n="lf_area">Panels (m²)</span><input id="lfArea" type="number" min="0.1" step="0.5"></label>
+        <label><span data-i18n="lf_eff">Panel efficiency (%)</span><input id="lfEff" type="number" min="5" max="45" step="1"></label>
+        <label><span data-i18n="lf_min">Lowest charge allowed (%)</span><input id="lfMin" type="number" min="0" max="80" step="5"></label>
+        <label><span data-i18n="lf_sleep">Sleep draw (W)</span><input id="lfSleep" type="number" min="0" step="1"></label>
+        <label><span data-i18n="lf_mode">Panels</span><select id="lfMode"><option value="track" data-i18n="lf_track">Turn with the Sun</option><option value="fixed" data-i18n="lf_fixed">Fixed direction</option></select></label>
+        <label><span data-i18n="lf_az">Fixed panel faces (°)</span><input id="lfAz" type="number" min="0" max="359" step="5"></label>
+        <label class="chk lf-wide"><input type="checkbox" id="lfHib"><span data-i18n="lf_hib">Can sleep through the dark and wake with the Sun</span></label>
+      </form>
+
+      <div class="strips" id="strips">
+        <div class="strips-names" id="stripNames"></div>
+        <canvas id="stripsCv" class="strips-cv"></canvas>
+      </div>
+
+      <ul class="legend" id="stripLegend">
+        <li><i class="sw sw-sun"></i><span data-i18n="lg_sun">Sunlight on the lander</span></li>
+        <li><i class="sw sw-earth"></i><span data-i18n="lg_earth">Earth in view</span></li>
+        <li><i class="sw sw-ok"></i><span data-i18n="lg_ok">Landing that day works</span></li>
+        <li><i class="sw sw-sleep"></i><span data-i18n="lg_sleep">Lander has to sleep</span></li>
+        <li><i class="sw sw-lost"></i><span data-i18n="lg_lost">Lander is lost</span></li>
+      </ul>
+
+      <div class="verdict" id="verdict" aria-live="polite"></div>
+    </div>
   </div>
 </section>
 
-<!-- ============================== PLANNER ============================== -->
-<section class="view" id="view-planner">
-  <div class="wrap">
-    <div class="page-head"><div><h1>مخطط المهمة</h1>
-      <p>حدّد متى بتقدر تهبط، وكم بدها المهمة، وشو مواصفات مركبتك. بنجرّب كل موقع بالقطب الجنوبي (شبكة كل 2 كم) بكل يوم هبوط ممكن، وبنحسب الإضاءة والاتصال ورصيد البطارية ساعة بساعة على التضاريس الحقيقية. بعدين بنطلعلك أفضل 3 مواقع، مع القرب من الجليد.</p></div></div>
-    <div class="planner">
-      <div class="col">
-        <div class="card pad">
-          <div class="sec-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>نافذة الهبوط والمهمة</div>
-          <div class="grid2">
-            <label class="fld"><span>من تاريخ</span><input type="date" class="inp" id="pFrom"></label>
-            <label class="fld"><span>إلى تاريخ</span><input type="date" class="inp" id="pTo"></label>
-          </div>
-          <label class="fld" style="margin-top:10px"><span>مدة المهمة على السطح <b id="pDaysLab">14 يوم</b></span><input type="range" id="pDays" min="1" max="60" value="14"></label>
-        </div>
-        <div class="card pad">
-          <div class="sec-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2M6 10v4M10 10v4"/></svg>المركبة والطاقة</div>
-          <div class="seg" id="presetSeg" style="margin-bottom:10px">
-            <button data-p="small">صغيرة</button><button data-p="medium" class="on">متوسطة</button><button data-p="large">كبيرة</button>
-          </div>
-          <div class="grid2">
-            <label class="fld"><span>سعة البطارية (Wh)</span><input type="number" class="inp" id="lCap" min="10" step="100"></label>
-            <label class="fld"><span>الاستهلاك (W)</span><input type="number" class="inp" id="lLoad" min="1" step="10"></label>
-            <label class="fld"><span>مساحة الألواح (m²)</span><input type="number" class="inp" id="lArea" min="0.1" step="0.5"></label>
-            <label class="fld"><span>كفاءة الألواح (%)</span><input type="number" class="inp" id="lEff" min="5" max="45" step="1"></label>
-          </div>
-          <label class="fld" style="margin-top:10px"><span>أدنى شحن مسموح للبطارية <b id="lMinLab">20%</b></span><input type="range" id="lMin" min="0" max="60" value="20"></label>
-          <div class="muted small" style="margin:10px 0 6px">الألواح</div>
-          <div class="seg" id="panelSeg"><button data-m="track" class="on">بتلف مع الشمس</button><button data-m="fixed">ثابتة باتجاه</button></div>
-          <label class="fld hidden" id="fixedAzBox" style="margin-top:8px"><span>اتجاه اللوح الثابت (السمت) <b id="lAzLab">0°</b></span><input type="range" id="lAz" min="0" max="355" step="5" value="0"></label>
-          <label class="toggle" style="margin-top:12px">المركبة بتقدر تنام بالظلمة وتصحى مع الشمس<input type="checkbox" id="lHib" checked><i></i></label>
-          <div class="grid2" id="hibBox">
-            <label class="fld"><span>استهلاك وضع النوم (W)</span><input type="number" class="inp" id="lSleep" min="0" step="5" value="20"></label>
-            <label class="fld"><span>بتصحى لما يوصل الشحن (%)</span><input type="number" class="inp" id="lWake" min="10" max="100" step="5" value="50"></label>
-          </div>
-          <p class="note" id="hibNote" style="margin:8px 0 0">بوضع النوم كل الأجهزة بتطفي، وبتضل السخانات بس عشان ما تتجمد البطارية. إذا خلصت البطارية وهي نايمة، السخانات بتطفي والبرد بيتلفها، وهيك بتنتهي المهمة. 0 W يعني تدفئة ما بتحتاج كهرباء، زي مصادر الحرارة النووية الصغيرة بمركبة Chang'e 4.</p>
-          <p class="note" style="margin:10px 0 0">الأحجام الجاهزة أمثلة توضيحية، مش مواصفات مركبة حقيقية. الألواح عمودية لأنه الشمس بالقطب واطية (أقل من 2° فوق الأفق).</p>
-        </div>
-        <div class="card pad">
-          <div class="sec-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>الأولويات</div>
-          <label class="fld"><span>أهمية القرب من الجليد <b id="wIceLab">متوسطة</b></span><input type="range" id="wIce" min="0" max="10" value="5"></label>
-          <label class="fld" style="margin-top:8px"><span>أهمية الاتصال مع الأرض <b id="wCommLab">متوسطة</b></span><input type="range" id="wComm" min="0" max="10" value="5"></label>
-          <label class="fld" style="margin-top:8px"><span>أهمية الإضاءة <b id="wLitLab">عالية</b></span><input type="range" id="wLit" min="0" max="10" value="7"></label>
-          <div class="grid2" style="margin-top:10px">
-            <label class="fld"><span>أقصى انحدار <b id="mxSlopeLab">10°</b></span><input type="range" id="mxSlope" min="3" max="15" value="10"></label>
-            <label class="fld"><span>أقصى مسافة للجليد <b id="mxIceLab">15 كم</b></span><input type="range" id="mxIce" min="2" max="60" value="15"></label>
-          </div>
-          <label class="toggle" style="margin-top:6px">جليد مؤكد أكثر فقط (5 رصدات أو أكثر)<input type="checkbox" id="iceStrong"><i></i></label>
-          <button class="btn gold" id="btnRun" style="width:100%; margin-top:10px">احسب أفضل المواقع</button>
-          <div class="progress" style="margin-top:10px"><i id="runProg"></i></div>
-          <div class="muted small" id="runMsg" style="margin-top:6px"></div>
+<section id="site-file" class="file gutter" aria-labelledby="fileTitle">
+  <div class="file-head">
+    <h2 id="fileTitle">&nbsp;</h2>
+    <p class="file-sub" id="fileSub"></p>
+  </div>
+  <dl class="facts" id="facts"></dl>
+
+  <div class="file-row">
+    <div class="blk">
+      <h3 id="nowTitle">&nbsp;</h3>
+      <div class="duo">
+        <canvas id="compassCv" class="dial" role="img" aria-label="Compass"></canvas>
+        <dl class="kv" id="nowList"></dl>
+      </div>
+    </div>
+    <div class="blk">
+      <h3 id="roseTitle">&nbsp;</h3>
+      <div class="duo">
+        <canvas id="roseCv" class="dial" role="img" aria-label="Panel energy by direction"></canvas>
+        <div class="duo-text"><dl class="kv" id="roseList"></dl><p class="advice" id="roseAdvice"></p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="blk">
+    <h3 id="batTitle">&nbsp;</h3>
+    <dl class="facts facts-sm" id="misFacts"></dl>
+    <canvas id="batCv" class="bat-cv" role="img" aria-label="Battery charge over the mission"></canvas>
+    <ul class="legend">
+      <li><i class="sw sw-soc"></i><span data-i18n="lg_soc">Battery charge</span></li>
+      <li><i class="sw sw-sun"></i><span data-i18n="lg_sun">Sunlight on the lander</span></li>
+      <li><i class="sw sw-earth"></i><span data-i18n="lg_earth">Earth in view</span></li>
+      <li><i class="sw sw-work"></i><span data-i18n="lg_work">Working</span></li>
+      <li><i class="sw sw-asleep"></i><span data-i18n="lg_asleep">Asleep</span></li>
+      <li><i class="sw sw-dead"></i><span data-i18n="lg_dead">Lost</span></li>
+    </ul>
+    <p class="advice" id="batText"></p>
+  </div>
+
+  <div class="file-grid">
+    <div class="file-map blk">
+      <div class="col-head">
+        <h3 data-i18n="amap_title">Ground around the site, 24 km across</h3>
+        <div class="seg" id="fileSeg" role="group" aria-label="Analysis layer">
+          <button type="button" data-v="zone" class="on" data-i18n="f_zone">Landing zone</button>
+          <button type="button" data-v="slope" data-i18n="f_slope">Slope</button>
+          <button type="button" data-v="sun" data-i18n="f_sun">Sunlight</button>
+          <button type="button" data-v="earth" data-i18n="f_earth">Earth contact</button>
         </div>
       </div>
-
-      <div class="col">
-        <div class="card map-card">
-          <canvas id="plMap"></canvas>
-          <div class="map-tools"><button data-z="in">+</button><button data-z="out">−</button><button data-z="fit" title="كل القطب">⤢</button></div>
-          <div class="map-hover hidden" id="plHover"></div>
-        </div>
-        <div class="card pad">
-          <div class="legend"><span><i style="background:var(--safe)"></i>مناسب <b class="num" id="cSafe"></b></span><span><i style="background:var(--caution)"></i>بحذر <b class="num" id="cCaution"></b></span><span><i style="background:var(--risky)"></i>غير مناسب <b class="num" id="cRisky"></b></span><span><i style="background:var(--ice)"></i>جليد</span><span><i style="background:var(--gold)"></i>أفضل 3</span></div>
-          <p class="note" style="margin:8px 0 0"><b>مناسب</b>: المركبة بتشتغل كل المهمة بدون ما تنام وبيضل فيها 30% شحن على الأقل، والانحدار ≤ 8°، والأرض ظاهرة ≥ 40% من الوقت. <b>بحذر</b>: المركبة بتعيش لآخر المهمة بس بهامش أقل، أو بتنام بالظلمة وبتصحى، أو الانحدار أعلى. <b>غير مناسب</b>: المركبة بتنتهي قبل آخر المهمة بكل أيام النافذة. اضغط على الخريطة عشان تفحص أي نقطة.</p>
-        </div>
+      <div class="amap"><canvas id="fileCv"></canvas><p class="stage-msg" id="fileMsg" hidden></p></div>
+      <div class="amap-legend" id="fileLegend"></div>
+    </div>
+    <div class="file-side">
+      <div class="blk geo">
+        <h3 data-i18n="geo_title">Geology</h3>
+        <div id="geoNotes"></div>
+        <div id="rockMix"></div>
+        <figure class="geo-fig" id="geoFig"></figure>
       </div>
-
-      <div class="col results">
-        <div class="card pad">
-          <div class="sec-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3a3 3 0 0 1-3 4M7 5H4a3 3 0 0 0 3 4"/></svg>أفضل 3 مواقع</div>
-          <div id="topList"><p class="note">اضغط «احسب أفضل المواقع» عشان تطلع النتائج.</p></div>
-        </div>
-        <div class="card pad">
-          <div class="sec-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2M7 12h4"/></svg>هل الطاقة كافية؟</div>
-          <label class="fld"><span>الموقع</span><select class="inp" id="bSite"></select></label>
-          <label class="fld" style="margin-top:8px"><span>تاريخ الهبوط</span><input type="date" class="inp" id="bDate"></label>
-          <button class="btn purple" id="btnCheck" style="width:100%; margin-top:10px">افحص الطاقة</button>
-          <div id="checkOut" style="margin-top:12px"></div>
-        </div>
+      <div class="blk">
+        <h3 data-i18n="ice_title">Water ice nearby</h3>
+        <div class="tbl-wrap" id="iceBox"></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============================== COMPARE ============================== -->
-<section class="view" id="view-compare">
-  <div class="wrap">
-    <div class="page-head"><div><h1>مقارنة بين موقعين</h1>
-      <p>اختار موقعين من القائمة، أو اضغط على الخريطة. بنحسب الاثنين لنفس الفترة ونفس المركبة (من إعدادات مخطط المهمة)، وبنعلّم الأفضل بكل معيار.</p></div>
-      <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
-        <label class="fld"><span>بداية الفترة</span><input type="date" class="inp" id="cmpFrom" style="width:170px"></label>
-        <label class="fld"><span>مدة المهمة</span><select class="inp" id="cmpDays" style="width:140px"><option value="14">14 يوم</option><option value="30" selected>30 يوم</option><option value="90">90 يوم</option><option value="365">سنة</option></select></label>
-        <label class="fld"><span>يوم الهبوط</span><select class="inp" id="cmpFair" style="width:260px"><option value="best" selected>كل موقع بأفضل يوم (خلال شهر)</option><option value="same">نفس التاريخ للموقعين</option></select></label>
-        <button class="btn gold" id="btnCmp">قارن</button>
-      </div>
-    </div>
-    <div class="compare">
-      <div class="card slot a"><div class="slot-head"><div class="badge">A</div><b>الموقع الأول</b></div><select class="inp" id="cmpA"></select><div class="muted small num" id="cmpAc" style="margin-top:6px"></div></div>
-      <div class="card slot b"><div class="slot-head"><div class="badge">B</div><b>الموقع الثاني</b></div><select class="inp" id="cmpB"></select><div class="muted small num" id="cmpBc" style="margin-top:6px"></div></div>
-    </div>
-    <div class="planner" style="grid-template-columns: 1fr 1.25fr; margin-top:16px">
-      <div class="col">
-        <div class="card map-card"><canvas id="cmpMap"></canvas>
-          <div class="map-tools"><button data-z="in">+</button><button data-z="out">−</button><button data-z="fit">⤢</button></div>
-        </div>
-        <div class="card pad"><div class="seg" id="cmpPickSeg"><button data-s="A" class="on">الضغطة الجاية بتحدد A</button><button data-s="B">بتحدد B</button></div></div>
-      </div>
-      <div class="col">
-        <div class="card pad"><div id="cmpTable"><p class="note">اختار الموقعين واضغط «قارن».</p></div></div>
-        <div class="card pad hidden" id="cmpCharts">
-          <div class="muted small" style="margin-bottom:4px">خط الأفق: <span style="color:var(--gold)">A</span> و <span style="color:var(--earth)">B</span></div><canvas class="chart" id="cmpHz"></canvas>
-          <div class="muted small" style="margin:12px 0 4px">شحن البطارية من لحظة الهبوط: <span style="color:var(--gold)">A</span> و <span style="color:var(--earth)">B</span></div><canvas class="chart" id="cmpSoc"></canvas>
-          <div class="legend" style="margin:14px 0 6px"><span><i style="background:var(--gold)"></i>شغّالة</span><span><i style="background:#8a6a8f"></i>نايمة</span><span><i style="background:var(--risky)"></i>انتهت</span><span><i style="background:rgba(214,164,81,.45)"></i>شمس</span><span><i style="background:var(--earth)"></i>اتصال</span></div>
-          <div class="muted small" style="margin:6px 0 4px">A خلال المهمة</div><canvas class="chart" id="cmpTlA"></canvas>
-          <div class="muted small" style="margin:12px 0 4px">B خلال المهمة</div><canvas class="chart" id="cmpTlB"></canvas>
-        </div>
-      </div>
-    </div>
+<section id="method" class="method gutter" aria-labelledby="methodTitle">
+  <h2 id="methodTitle" data-i18n="method_title">How the numbers are made</h2>
+  <div class="method-grid">
+    <p data-i18n="m1">Terrain comes from the LOLA 80 m south-pole elevation model (NASA GSFC). From each site we cast 2,880 rays out to 300 km over the curved Moon and keep the highest terrain in every quarter degree of azimuth. That outline is the horizon you see in the panorama.</p>
+    <p data-i18n="m2">Sun and Earth positions come from NAIF SPICE (DE421) in the Moon-fixed frame, hour by hour, so libration and the lunar seasons are included. The Sun counts as up by the share of its disc clear of the terrain, the Earth by its centre.</p>
+    <p data-i18n="m3">The lander is an hourly energy balance: Sun-tracking panels, a battery, a working load and a sleep mode that keeps the heaters on. Research and education prototype, not flight certification. Earth visibility is geometric, not radio link quality.</p>
   </div>
-</section>
-
-<!-- ============================== ICE ============================== -->
-<section class="view" id="view-ice">
-  <div class="wrap">
-    <div class="page-head"><div><h1>وين الجليد بالقطب الجنوبي؟</h1>
-      <p>بقيعان الفوهات اللي ما بتوصلها الشمس أبداً، الحرارة بتنزل لحد 25–40 كلفن (أبرد من سطح بلوتو)، فالماء بيضل متجمد مليارات السنين. هاي الخريطة بتعرض <b>169 منطقة ظل دائم</b> رصد فيها جهاز Moon Mineralogy Mapper التابع لناسا آثار جليد على السطح، مع الحرارة والهيدروجين لكل وحدة.</p></div></div>
-    <div class="metrics" style="grid-template-columns:repeat(4,1fr); margin-bottom:16px">
-      <div class="metric"><div class="lab">مناطق فيها جليد مرصود</div><div class="val">169</div></div>
-      <div class="metric"><div class="lab">عدد رصدات الجليد (M3)</div><div class="val" id="iceDet">820</div></div>
-      <div class="metric"><div class="lab">أكثر منطقة رصدات</div><div class="val" style="font-size:18px">Shoemaker <small>134</small></div></div>
-      <div class="metric"><div class="lab">تأكيد بالاصطدام</div><div class="val" style="font-size:18px">LCROSS <small>2009</small></div></div>
-    </div>
-    <div class="ice-layout">
-      <div class="col" style="display:flex; flex-direction:column; gap:16px">
-        <div class="card map-card"><canvas id="iceMap"></canvas>
-          <div class="map-tools"><button data-z="in">+</button><button data-z="out">−</button><button data-z="fit">⤢</button></div>
-        </div>
-        <div class="card pad">
-          <label class="toggle">إظهار الظل الدائم المحسوب من حساباتنا (كل 1 كم)<input type="checkbox" id="icePsrOwn"><i></i></label>
-          <label class="toggle">إظهار المناطق اللي فيها 5 رصدات أو أكثر بس<input type="checkbox" id="iceStrongOnly"><i></i></label>
-          <div class="legend" style="margin-top:6px"><span><i style="background:var(--ice)"></i>منطقة ظل دائم فيها جليد (كل ما زاد اللون زادت الرصدات)</span><span><i style="background:#fff"></i>LCROSS: مكان الاصطدام اللي أكد وجود الماء</span></div>
-        </div>
-      </div>
-      <div class="col" style="display:flex; flex-direction:column; gap:16px">
-        <div class="card pad" id="iceDetail"><p class="note">اضغط على منطقة بالخريطة أو بالجدول عشان تشوف تفاصيلها.</p></div>
-        <div class="card pad"><div class="table-wrap"><table class="tbl" id="iceTable"></table></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================== ABOUT ============================== -->
-<section class="view" id="view-about">
-  <div class="wrap">
-    <div class="page-head"><div><h1>المنهجية والمصادر</h1>
-      <p>كل رقم بالموقع إله مصدر، وبنقدر نعيد حسابه. هون بنشرح كيف حسبنا، وشو حدود الدقة، ومن وين تنزّل البيانات.</p></div></div>
-    <div class="methods" id="methods"></div>
-  </div>
+  <p class="cap" data-i18n="scope">The search across all 11,844 candidate sites and the full water-ice atlas are still in the previous version, linked at the top, and move over next.</p>
 </section>
 </main>
 
-<script>
-  (function () {
-    if (window.I18N) window.I18N.apply(document.body);
-    var v = window.__v;
-    ['config.js', 'js/sunearth.js', 'js/terrain.js', 'js/sites.js', 'js/rocks.js', 'js/planner.js', 'js/sky.js', 'js/polarmap.js', 'js/charts.js', 'js/app.js']
-      .forEach(function (f) { document.write('<script src="' + f + '?v=' + v + '"><\/script>'); });
-    document.write('<script type="module" src="js/hero3d.js?v=' + v + '"><\/script>');
-  })();
-</script>
+<script src="config.js"></script>
+<script src="js/sunearth.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/rocks.js"></script>
+<script src="js/planner.js"></script>
+<script src="js/sites.js"></script>
+<script src="nav/i18n.js"></script>
+<script src="nav/horizon.js"></script>
+<script src="nav/data.js"></script>
+<script src="nav/sky.js"></script>
+<script src="nav/strips.js"></script>
+<script src="nav/map.js"></script>
+<script src="nav/sitefile.js"></script>
+<script src="nav/globe.js"></script>
+<script src="nav/details.js"></script>
+<script src="nav/main.js"></script>
 </body>
 </html>

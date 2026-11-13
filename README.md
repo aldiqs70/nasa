@@ -8,7 +8,7 @@ crater floors have not seen sunlight for billions of years and hold water ice. T
 curious public to students and researchers, explore where the light reaches, where Earth can be seen, where the
 ice is, and plan a lander mission. Fully bilingual: **English and Arabic**, with a language button in the top bar.
 
-Live site: https://aldiqs70.github.io/nasa/ (English: https://aldiqs70.github.io/nasa/?lang=en · العربية: https://aldiqs70.github.io/nasa/?lang=ar)
+Live site: https://aldiqs70.github.io/nasa/ (new navigator, English and Arabic with the language button). The previous version, with the full site search and the water-ice atlas, is at https://aldiqs70.github.io/nasa/classic.html
 
 ## What it does
 - **Home**: natural Sun, Earth and Moon (NASA Blue Marble and LRO textures, lit per pixel), tonight's real Moon phase, and a long-term landing-suitability map of the pole.
