@@ -42,7 +42,7 @@ canvas { display: block; }
 .bar { display: flex; align-items: center; gap: 20px; min-height: 48px; background: var(--sky); }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--sky); }
 .brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; min-width: 0; margin-inline-end: auto; }
-.brand-mark { width: 24px; height: 24px; align-self: center; flex: none; color: var(--text); }
+.brand-mark { width: 46px; height: 28px; align-self: center; flex: none; object-fit: contain; }
 .brand-name { font-family: var(--font-display); font-stretch: var(--wide); font-weight: 650; font-size: var(--s15); letter-spacing: 0.01em; white-space: nowrap; }
 .brand-tag { color: var(--muted); font-size: var(--s13); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar-link { color: var(--muted); font-size: var(--s13); text-decoration: none; white-space: nowrap; }
@@ -195,6 +195,10 @@ h3 { font-size: var(--s13); font-weight: 600; color: var(--muted); }
 .stepper button { width: 32px; height: 30px; background: transparent; border: 0; cursor: pointer; font-size: var(--s18); line-height: 1; }
 .stepper button:hover { background: var(--raise); }
 .stepper output { min-width: 6.2em; text-align: center; font-weight: 600; font-size: var(--s13); }
+.date-in { min-height: 30px; padding: 0 6px; background: transparent; border: 0; border-inline: 1px solid var(--line-strong); color: var(--text); font: inherit; font-size: var(--s13); font-weight: 600; font-variant-numeric: tabular-nums; color-scheme: dark; }
+.tab.sub { border-top: 1px solid var(--line); }
+.refs { margin-top: 6px; display: grid; gap: 6px; padding-inline-start: 1.2em; list-style: decimal; color: var(--muted); font-size: var(--s12); max-width: 78ch; }
+.refs li { direction: ltr; text-align: left; }
 .slip { font-size: var(--s13); color: var(--sun); font-weight: 600; }
 
 .lander-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 16px; margin-bottom: 12px; max-width: 900px; }

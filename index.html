@@ -8,13 +8,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="img/icon.png">
 <link rel="stylesheet" href="nav/app.css">
 </head>
 <body>
 
 <header class="bar gutter">
   <a class="brand" href="#overview">
-    <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="16" r="9.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20.7" cy="9.3" r="3.2" fill="var(--sun)"/></svg>
+    <img class="brand-mark" src="img/logo_mark.png" alt="LunarLink_JO" width="46" height="28">
     <span class="brand-name" data-i18n="brand">Edge of Light</span>
     <span class="brand-tag" data-i18n="tagline">Lunar landing site navigator</span>
   </a>
@@ -25,13 +26,10 @@
 <nav class="tabs" id="tabs" aria-label="Sections">
   <div class="tabs-in gutter">
     <a href="#overview" data-tab="overview" data-i18n="tab_overview">Overview</a>
-    <a href="#sky" data-tab="sky" data-i18n="tab_sky">Sky</a>
+    <a href="#sky" data-tab="sky" data-i18n="tab_sky">Sky and map</a>
     <a href="#dates" data-tab="dates" data-i18n="tab_dates">Sites and dates</a>
-    <a href="#map" data-tab="map" data-i18n="tab_map">Map</a>
     <a href="#power" data-tab="power" data-i18n="tab_power">Power</a>
-    <a href="#slope" data-tab="slope" data-i18n="tab_slope">Slope and terrain</a>
-    <a href="#ice" data-tab="ice" data-i18n="tab_ice">Ice and rover</a>
-    <a href="#rocks" data-tab="rocks" data-i18n="tab_rocks">Rocks</a>
+    <a href="#rocks" data-tab="rocks" data-i18n="tab_rocks">Rocks, slope and ice</a>
     <a href="#guide" data-tab="guide" data-i18n="tab_guide">Guide</a>
   </div>
 </nav>
@@ -47,7 +45,7 @@
     <span class="ctx-k" id="landK" data-i18n="landing">Landing</span>
     <div class="stepper" role="group" aria-labelledby="landK">
       <button type="button" id="landPrev" aria-label="One day earlier">&#x2212;</button>
-      <output id="landOut">&nbsp;</output>
+      <label class="vh" for="landDate" data-i18n="landing">Landing</label><input type="date" id="landDate" class="date-in">
       <button type="button" id="landNext" aria-label="One day later">+</button>
     </div>
     <span class="slip" id="slipTxt"></span>
@@ -153,7 +151,7 @@
 </section>
 
 <!-- ============================== map -->
-<section class="tab pad gutter" id="tab-map" data-tab="map" hidden aria-labelledby="mapTitle">
+<section class="tab pad gutter" id="tab-map" data-tab="sky" hidden aria-labelledby="mapTitle">
   <div class="mapgrid">
     <div class="stage" id="stage">
       <div class="globe" id="globe"></div>
@@ -255,8 +253,25 @@
   </div>
 </section>
 
+<!-- ============================== rocks -->
+<section class="tab pad gutter" id="tab-rocks" data-tab="rocks" hidden aria-labelledby="rocksTitle">
+  <div class="tab-head"><h2 id="rocksTitle" data-i18n="geo_title">Rocks and geology</h2></div>
+  <div class="file-grid rocks-grid">
+    <div class="blk geo">
+      <div id="rockMix"></div>
+      <h3 data-i18n="geo_notes">Notes from the geology team</h3>
+      <div id="geoNotes"></div>
+      <div id="rockRefs"></div>
+    </div>
+    <div class="blk">
+      <h3 data-i18n="geo_fig">Team analysis map</h3>
+      <figure class="geo-fig" id="geoFig"></figure>
+    </div>
+  </div>
+</section>
+
 <!-- ============================== slope and terrain -->
-<section class="tab pad gutter" id="tab-slope" data-tab="slope" hidden aria-labelledby="slopeTitle">
+<section class="tab pad gutter sub" id="tab-slope" data-tab="rocks" hidden aria-labelledby="slopeTitle">
   <div class="tab-head"><h2 id="slopeTitle" data-i18n="slope_title">Slope and terrain</h2></div>
   <dl class="facts" id="facts"></dl>
   <div class="file-grid">
@@ -286,7 +301,7 @@
 </section>
 
 <!-- ============================== ice and rover -->
-<section class="tab pad gutter" id="tab-ice" data-tab="ice" hidden aria-labelledby="iceTitle">
+<section class="tab pad gutter sub" id="tab-ice" data-tab="rocks" hidden aria-labelledby="iceTitle">
   <div class="tab-head">
     <h2 id="iceTitle" data-i18n="ice_title">Water ice nearby</h2>
     <p class="tab-sub" data-i18n="ice_sub">Distance from the landing site to shadowed regions where ice was detected, and whether a rover can drive there.</p>
@@ -314,22 +329,6 @@
         <h3 data-i18n="ice_list">Nearest regions</h3>
         <div class="tbl-wrap" id="iceBox"></div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================== rocks -->
-<section class="tab pad gutter" id="tab-rocks" data-tab="rocks" hidden aria-labelledby="rocksTitle">
-  <div class="tab-head"><h2 id="rocksTitle" data-i18n="geo_title">Rocks and geology</h2></div>
-  <div class="file-grid rocks-grid">
-    <div class="blk geo">
-      <h3 data-i18n="geo_notes">Notes from the geology team</h3>
-      <div id="geoNotes"></div>
-      <div id="rockMix"></div>
-    </div>
-    <div class="blk">
-      <h3 data-i18n="geo_fig">Team analysis map</h3>
-      <figure class="geo-fig" id="geoFig"></figure>
     </div>
   </div>
 </section>

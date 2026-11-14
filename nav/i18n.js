@@ -145,8 +145,8 @@
     ice_note: ['Permanently shadowed regions with Moon Mineralogy Mapper ice detections (Lemelin et al. 2021). Distance is to the nearest edge. Access slope is the dataset’s slope class for reaching the region. Surface ice stays stable below about 110 K.', 'مناطق ظل دائم فيها رصدات جليد من Moon Mineralogy Mapper (Lemelin وآخرون 2021). المسافة إلى أقرب حافة. انحدار الوصول هو فئة الانحدار للوصول إلى المنطقة كما في البيانات. الجليد السطحي يبقى ثابتاً تحت نحو 110 كلفن.'],
     ice_none: ['The ice map covers the south polar region only.', 'خريطة الجليد تغطي منطقة القطب الجنوبي فقط.'],
     show_it: ['Analyse', 'حلّل'],
-    tab_overview: ['Overview', 'نظرة عامة'], tab_sky: ['Sky', 'السماء'], tab_dates: ['Sites and dates', 'المواقع والمواعيد'], tab_map: ['Map', 'الخريطة'], tab_power: ['Power', 'الطاقة'],
-    tab_slope: ['Slope and terrain', 'الانحدار والتضاريس'], tab_ice: ['Ice and rover', 'الجليد والروفر'], tab_rocks: ['Rocks', 'الصخور'], tab_guide: ['Guide', 'الدليل'],
+    tab_overview: ['Overview', 'نظرة عامة'], tab_sky: ['Sky and map', 'السماء والخريطة'], tab_dates: ['Sites and dates', 'المواقع والمواعيد'], tab_map: ['Map', 'الخريطة'], tab_power: ['Power', 'الطاقة'],
+    tab_slope: ['Slope and terrain', 'الانحدار والتضاريس'], tab_ice: ['Ice and rover', 'الجليد والروفر'], tab_rocks: ['Rocks, slope and ice', 'الصخور والانحدار والجليد'], tab_guide: ['Guide', 'الدليل'],
     days: ['days', 'يوماً'],
     rg_sun: ['Sunlight, one lap of the Sun from landing', 'ضوء الشمس، دورة كاملة للشمس من يوم الهبوط'], rg_earth: ['Earth in view', 'الأرض ظاهرة'], rg_state: ['Lander through the mission', 'حال المركبة خلال المهمة'],
     ring_cap: ['Near the pole the Sun circles the horizon once every 29.5 days, so around this ring direction and date are the same thing. Inside is the sky from the site, with the terrain rising from the rim. Drag around the ring to slip the landing date.',
@@ -189,7 +189,17 @@
     geo_notes: ['Notes from the geology team', 'ملاحظات فريق الجيولوجيا'], geo_fig: ['Team analysis map', 'خريطة الفريق التحليلية'],
     foot: ['Terrain: LOLA 80 m (NASA GSFC). Sun and Earth: NAIF SPICE DE421. Ice: Lemelin et al. 2021. Research and education prototype, not flight certification.', 'التضاريس: LOLA 80 م (ناسا GSFC). الشمس والأرض: NAIF SPICE DE421. الجليد: Lemelin وآخرون 2021. نموذج للبحث والتعليم وليس اعتماداً للطيران.'],
     plan_btn: ['Change the plan', 'تعديل الخطة'], plan_sum: ['Landing {date}, {n} days, {lander} lander', 'الهبوط {date}، {n} يوماً، مركبة {lander}'],
+    refs: ['References', 'المراجع'], date_range: ['Dates from 1 January 2026 to late 2030 are available.', 'التواريخ المتاحة من 1 كانون الثاني 2026 إلى أواخر 2030.'],
     load_fail: ['The site data did not load. Reload the page.', 'لم تُحمَّل بيانات الموقع. أعد تحميل الصفحة.'],
+  };
+  // Sources for every dataset and constant the site uses.
+  NAV.REFS = {
+    rocks: [
+      'Lawrence, D. J., et al. (2002). Iron abundances on the lunar surface as measured by the Lunar Prospector gamma-ray and neutron spectrometers. Journal of Geophysical Research 107(E12), 5130.',
+      'Lawrence, D. J., et al. (2003). Small-area thorium features on the lunar surface. Journal of Geophysical Research 108(E9), 5102.',
+      'Lunar Prospector reduced data (half-degree FeO and Th maps), NASA PDS Geosciences Node: pds-geosciences.wustl.edu/missions/lunarp/reduced_special.html',
+      'Rock end-member values (anorthosite, basalt / norite, KREEP) are typical compositions set by the team in js/rocks.js; they are approximations, not measurements at the site.',
+    ],
   };
   NAV.lang = 'en';
   NAV.T = function (key, vars) {
@@ -208,7 +218,7 @@
   NAV.fmtDay = (ms) => df({ day: 'numeric', month: 'short' }).format(ms);
   // short date for tight places: Arabic month names are long, so Arabic uses day/month there
   NAV.fmtDayShort = (ms) => (NAV.lang === 'ar' ? new Date(ms).getUTCDate() + '/' + (new Date(ms).getUTCMonth() + 1) : NAV.fmtDay(ms));
-  NAV.fmtDayLong = (ms) => df({ day: 'numeric', month: 'long' }).format(ms);
+  NAV.fmtDayLong = (ms) => df({ day: 'numeric', month: 'long', year: 'numeric' }).format(ms);
   NAV.fmtClock = (ms) => df({ day: 'numeric', month: 'short', year: 'numeric' }).format(ms) + ', ' + new Date(ms).toISOString().slice(11, 16) + ' UTC';
   NAV.fmtMonth = (ms) => df({ month: 'short' }).format(ms);
   NAV.num = (v, d) => Number(v).toLocaleString('en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });

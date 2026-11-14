@@ -49,18 +49,27 @@
     });
   };
 
+  // The 60-day window can start on any day the ephemeris covers (2026 to 2030).
+  function sample(t0) {
+    const D = NAV.data, range = D.eph.range();
+    t0 = Math.floor(t0 / DAY) * DAY;
+    t0 = Math.min(Math.max(t0, range[0]), range[1] - (WINDOW_DAYS + MAX_MISSION + 2) * DAY);
+    D.t0 = t0; D.S = Planner.sampleEphem(D.eph, t0, D.hours, 1);
+    D.earthR = new Float32Array(D.S.n);
+    for (let k = 0; k < D.S.n; k++) D.earthR[k] = Math.asin(6371 / Math.hypot(D.S.earth[3 * k], D.S.earth[3 * k + 1], D.S.earth[3 * k + 2])) / D2R;
+  }
   NAV.load = async function () {
     const [em, eb, idx] = await Promise.all([getJSON('data/out/ephem.json'), getBin('data/out/ephem.bin'), getJSON('data/sites/sites.json')]);
-    const eph = new SunEarth.Ephemeris(em, new Float32Array(eb)), range = eph.range();
-    let t0 = Math.floor(Date.now() / DAY) * DAY;
-    t0 = Math.min(Math.max(t0, range[0]), range[1] - (WINDOW_DAYS + MAX_MISSION + 2) * DAY);
-    const hours = (WINDOW_DAYS + MAX_MISSION) * 24;
-    const S = Planner.sampleEphem(eph, t0, hours, 1);
-    const earthR = new Float32Array(S.n);
-    for (let k = 0; k < S.n; k++) earthR[k] = Math.asin(6371 / Math.hypot(S.earth[3 * k], S.earth[3 * k + 1], S.earth[3 * k + 2])) / D2R;
-    NAV.data = { eph, t0, hours, windowDays: WINDOW_DAYS, windowH: WINDOW_DAYS * 24, S, earthR, crop: idx.crop, sites: [] };
+    const eph = new SunEarth.Ephemeris(em, new Float32Array(eb));
+    NAV.data = { eph, hours: (WINDOW_DAYS + MAX_MISSION) * 24, windowDays: WINDOW_DAYS, windowH: WINDOW_DAYS * 24, crop: idx.crop, sites: [], range: eph.range() };
+    sample(Date.now());
     NAV.data.sites = idx.sites.map((s) => NAV.buildSite({ id: s.id, name: s.name, ar: s.ar, lat: s.lat, lon: s.lon, h: s.h, slope: s.slope }, s.bands.map((b) => Float32Array.from(b, (v) => v / 100))));
     return NAV.data;
+  };
+  // Move the window so it starts at t0 (ms). Every site is recomputed for the new dates.
+  NAV.rewindow = function (t0) {
+    const D = NAV.data; sample(t0);
+    D.sites = D.sites.map((s) => { const n = NAV.buildSite({ id: s.id, name: s.name, ar: s.ar, lat: s.lat, lon: s.lon, h: s.h, slope: s.slope, custom: s.custom, flat: s.flat }, s.bands); n.near = s.near; return n; });
   };
 
   // ---------------------------------------------------------------- terrain, ice, rocks, long-term grids (loaded once, on demand)

@@ -1,7 +1,7 @@
 /* Wiring: one scenario (site, landing day, mission length, lander, time shown) drives every tab. */
 (async function () {
   const NAV = window.NAV, T = NAV.T, $ = (id) => document.getElementById(id), HOUR = 3600e3;
-  const TABS = ['overview', 'sky', 'dates', 'map', 'power', 'slope', 'ice', 'rocks', 'guide'];
+  const TABS = ['overview', 'sky', 'dates', 'power', 'rocks', 'guide'], ALIAS = { map: 'sky', slope: 'rocks', ice: 'rocks' }, DAY = 864e5;
   const st = { tab: 'overview', sel: 0, f: 0, land: 4, plan: 4, mission: 14, view: '3d', mapLayer: 'sun', fileLayer: 'zone', circle: 1000, iceSel: 0, playing: false, g3: 'idle', mis: null };
 
   let D;
@@ -30,6 +30,7 @@
   st.f = Math.max(0, Math.min(D.windowH - 1, (Date.now() - D.t0) / HOUR));
   const g0 = NAV.outcomes(site(), st.mission).findIndex((o, d) => d >= 1 && NAV.isGood(o));
   st.plan = st.land = g0 >= 0 ? g0 : 4;
+  let planMs = D.t0 + st.plan * DAY;
   sky.center = site().earthAz;
 
   // ---------------------------------------------------------------- formatting
@@ -66,32 +67,31 @@
       if (time) { ring.draw(s, st, st.mis.b.state); renderGlance(s, a); }
     } else if (tab === 'sky') {
       sky.draw(s, st.f); if (time) renderReadouts(s, a);
-    } else if (tab === 'dates') {
-      if (plan) renderRows();
-      if (time) strips.draw({ sel: st.sel, f: st.f, land: st.land, plan: st.plan, mission: st.mission, outs: outs() });
-    } else if (tab === 'map') {
       if (time) {
         if (st.view === '2d') map.draw(st.mapLayer, s, a);
         const now = performance.now(); if (plan || now - lastGlobe > 160) { lastGlobe = now; globe.setTime(tMs()); }
       }
+    } else if (tab === 'dates') {
+      if (plan) renderRows();
+      if (time) strips.draw({ sel: st.sel, f: st.f, land: st.land, plan: st.plan, mission: st.mission, outs: outs() });
     } else if (tab === 'power') {
       if (plan) renderMission();
       if (time) { renderNow(s, a); NAV.Details.battery($('batCv'), s, st.mis, st.f); }
-    } else if (tab === 'slope') { if (all) { renderFacts(); renderMap24(); }
-    } else if (tab === 'ice') { if (plan) renderIce();
-    } else if (tab === 'rocks') { if (all) renderGeo();
+    } else if (tab === 'rocks') { if (all) { renderGeo(); renderFacts(); renderMap24(); } if (plan) renderIce();
     } else if (tab === 'guide') { if (all) loadGuide(); }
   }
 
   // ---------------------------------------------------------------- tabs
   function showTab(name) {
+    const part = ALIAS[name] ? name : null; if (part) name = ALIAS[name];
     if (!TABS.includes(name)) name = 'overview';
     st.tab = name;
     document.querySelectorAll('section.tab').forEach((el) => { el.hidden = el.dataset.tab !== name; });
     document.querySelectorAll('#tabs a').forEach((el) => { if (el.dataset.tab === name) { el.setAttribute('aria-current', 'page'); el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } else el.removeAttribute('aria-current'); });
     $('ctx').classList.toggle('quiet', name === 'guide');
     layout();
-    if (name === 'map') setView(st.view);
+    if (name === 'sky') setView(st.view);
+    if (part) requestAnimationFrame(() => { const el = $('tab-' + part); if (el) el.scrollIntoView({ block: 'start' }); }); else window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
 
@@ -100,7 +100,20 @@
     st.sel = i; st.iceSel = 0; sky.center = site().earthAz; $('siteSel').value = String(i); need('all');
     if (globe.viewer) { globe.setSites(D.sites, i); if (!keepCam) globe.cam('site'); }
   }
-  function setLanding(d) { d = Math.max(0, Math.min(D.windowDays - 1, d)); if (d === st.land) return; st.land = d; need('plan'); }
+  function setLanding(d) {
+    if (d < 0 || d > D.windowDays - 1) return setLandingDate(D.t0 + d * DAY);
+    if (d === st.land) return; st.land = d; need('plan');
+  }
+  // Any landing date the ephemeris covers. Outside the 60 days on screen, the window moves to it.
+  function setLandingDate(ms) {
+    ms = Math.min(Math.max(ms, D.range[0]), D.range[1] - 125 * DAY);
+    const d = Math.round((ms - D.t0) / DAY);
+    if (d >= 0 && d <= D.windowDays - 1) return setLanding(d);
+    NAV.rewindow(ms - 10 * DAY);
+    st.land = Math.round((ms - D.t0) / DAY); st.plan = Math.round((planMs - D.t0) / DAY); st.f = st.land * 24; st.iceSel = 0;
+    if (globe.viewer) globe.setSites(D.sites, st.sel);
+    sky.center = site().earthAz; layout();
+  }
   function setMission(n) {
     n = Math.max(1, Math.min(NAV.MAX_MISSION, Math.round(n) || 1)); st.mission = n; $('missionIn').value = n;
     $('missionSeg').querySelectorAll('button').forEach((b) => b.classList.toggle('on', +b.dataset.v === n)); need('plan');
@@ -143,7 +156,7 @@
       globe.setSites(D.sites, st.sel); globe.setTime(tMs()); globe.resize();
       NAV.extras().then((X) => { if (X.ice) globe.setIce(X.ice.psr); });
       caption();
-    }).catch((e) => { console.warn(e); st.g3 = 'failed'; stageMsg(''); if (st.tab === 'map') setView('2d'); else st.view = '2d'; });
+    }).catch((e) => { console.warn(e); st.g3 = 'failed'; stageMsg(''); if (st.tab === 'sky') setView('2d'); else st.view = '2d'; });
   }
   function setView(v) {
     st.view = v;
@@ -176,7 +189,7 @@
     $('skyNote').textContent = T('sky_note', { n: sky.stretch().toFixed(1) });
     $('playTxt').textContent = T(st.playing ? 'pause' : 'play');
     $('skyCv').setAttribute('aria-label', T('sky_title')); $('ringCv').setAttribute('aria-label', T('tab_overview'));
-    if (st.tab === 'map' && st.view === '2d') map.pins(D.sites, st.sel);
+    if (st.tab === 'sky' && st.view === '2d') map.pins(D.sites, st.sel);
     caption();
   }
   function outcomeText(o) {
@@ -185,7 +198,8 @@
     return o.dark ? T('o_ok_dark') : T('o_ok', { n: st.mission });
   }
   function renderLanding() {
-    $('landOut').textContent = NAV.fmtDay(D.t0 + st.land * 864e5);
+    const li = $('landDate'), iso = (ms) => new Date(ms).toISOString().slice(0, 10);
+    li.value = iso(D.t0 + st.land * DAY); li.min = iso(D.range[0]); li.max = iso(D.range[1] - 125 * DAY); li.title = T('date_range');
     $('ctxSum').textContent = T('plan_sum', { date: NAV.fmtDay(D.t0 + st.land * 864e5), n: st.mission, lander: landerName() });
     const n = st.land - st.plan;
     $('slipTxt').textContent = n > 0 ? T('slip_late', { n }) : n < 0 ? T('slip_early', { n: -n }) : '';
@@ -363,7 +377,7 @@
   async function renderMap24() {
     const s = site(), show = () => { const d = file.get(s); file.draw(s, st.fileLayer, st.circle); renderFileLegend(d); const m = $('fileMsg'); m.textContent = d && d.none ? T('amap_none') : ''; m.hidden = !(d && d.none); renderCircle(); };
     show();
-    if (!file.get(s)) { try { await file.load(s); } catch (e) { console.error(e); return; } if (site() === s && st.tab === 'slope') show(); }
+    if (!file.get(s)) { try { await file.load(s); } catch (e) { console.error(e); return; } if (site() === s && st.tab === 'rocks') show(); }
   }
 
   // ---------------------------------------------------------------- ice and rover
@@ -371,7 +385,7 @@
   async function renderIce() {
     const s = site(), out = $('roverOut'), ib = $('iceBox'), msg = $('roverMsg');
     const [X, T3] = await Promise.all([NAV.extras(), s.lat < -79.5 ? NAV.terrain() : null]);
-    if (site() !== s || st.tab !== 'ice') return;
+    if (site() !== s || st.tab !== 'rocks') return;
     const near = NAV.iceNear(s, 6);
     if (!near.length) { ib.innerHTML = '<p class="conf">' + T('ice_none') + '</p>'; out.innerHTML = ''; NAV.Rover.draw($('roverCv'), null, s, 15); msg.textContent = T('ice_none'); msg.hidden = false; return; }
     if (st.iceSel >= near.length) st.iceSel = 0;
@@ -425,6 +439,7 @@
         '<ul class="legend">' + MIX.map((m) => '<li><i class="sw" style="background:' + m[2] + '"></i><span>' + T(m[1]) + ' <b>' + Math.round(r[m[0]]) + '%</b></span></li>').join('') + '</ul>' +
         '<p class="conf">' + T('rock_note', { fe: r.FeO.toFixed(1), th: r.Th.toFixed(2) }) + '</p>';
     } else rm.innerHTML = X ? '<p class="conf">' + T('rock_none') + '</p>' : '';
+    $('rockRefs').innerHTML = '<h4>' + T('refs') + '</h4><ol class="refs">' + NAV.REFS.rocks.map((r) => '<li>' + r + '</li>').join('') + '</ol>';
     const fig = $('geoFig'), f = s.custom ? null : figures[s.id]; fig.textContent = '';
     if (f && (f.en || f.ar)) {
       const own = f[NAV.lang], src = own || f.en || f.ar, im = document.createElement('img'), cap = document.createElement('figcaption');
@@ -448,8 +463,9 @@
   $('langBtn').addEventListener('click', () => setLang(NAV.lang === 'ar' ? 'en' : 'ar'));
   $('landPrev').addEventListener('click', () => setLanding(st.land - 1));
   $('landNext').addEventListener('click', () => setLanding(st.land + 1));
-  $('slipReset').addEventListener('click', () => setLanding(st.plan));
-  $('toNow').addEventListener('click', () => { st.f = Math.max(0, Math.min(D.windowH - 1, (Date.now() - D.t0) / HOUR)); need('time'); });
+  $('slipReset').addEventListener('click', () => setLandingDate(planMs));
+  $('landDate').addEventListener('change', (e) => { const ms = Date.parse(e.target.value + 'T00:00:00Z'); if (!Number.isNaN(ms)) { planMs = ms; setLandingDate(ms); st.plan = st.land; need('plan'); } });
+  $('toNow').addEventListener('click', () => { const f = (Date.now() - D.t0) / HOUR; if (f < 0 || f > D.windowH - 1) { planMs = Math.floor(Date.now() / DAY) * DAY + DAY; setLandingDate(planMs); st.plan = st.land; } st.f = Math.max(0, Math.min(D.windowH - 1, (Date.now() - D.t0) / HOUR)); need('plan'); });
   $('toLanding').addEventListener('click', () => { st.f = st.land * 24; need('time'); });
   const seg = (id, fn) => $(id).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; $(id).querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); fn(b.dataset.v); });
   seg('missionSeg', (v) => setMission(+v));
@@ -472,7 +488,7 @@
     $('llErr').textContent = ok ? '' : T('ll_err');
     if (ok) pickPoint(lat, lon, null).then(() => { if (globe.viewer) globe.cam('site'); });
   });
-  $('roverForm').addEventListener('input', () => { if (st.tab === 'ice') renderIce(); });
+  $('roverForm').addEventListener('input', () => { if (st.tab === 'rocks') renderIce(); });
   $('roverForm').addEventListener('submit', (e) => e.preventDefault());
 
   // lander settings
@@ -513,10 +529,9 @@
   function layout() {
     const t = st.tab;
     if (t === 'overview') ring.resize();
-    else if (t === 'sky') sky.resize();
+    else if (t === 'sky') { sky.resize(); globe.resize(); if (st.view === '2d') { map.resize(); map.pins(D.sites, st.sel); } }
     else if (t === 'dates') strips.resize(D.sites.length);
-    else if (t === 'map') { globe.resize(); if (st.view === '2d') { map.resize(); map.pins(D.sites, st.sel); } }
-    else if (t === 'slope') file.resize();
+    else if (t === 'rocks') file.resize();
     need('all');
   }
   let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(layout, 80); });

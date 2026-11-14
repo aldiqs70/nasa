@@ -62,7 +62,7 @@
     for (let d = 0; d <= D.windowDays; d++) {
       const x = Math.round(X(d * 24)), major = d % every === 0;
       g.fillStyle = major ? C.muted : '#55534E'; g.fillRect(Math.min(W - 1, x), AX - (major ? 7 : 3), 1, major ? 7 : 3);
-      if (major && d < D.windowDays) { g.textAlign = 'left'; g.fillStyle = C.muted; g.fillText(NAV.fmtDay(D.t0 + d * 864e5), x + 4, AX - 11); }
+      if (major && d < D.windowDays) { g.textAlign = 'left'; g.fillStyle = C.muted; g.fillText(NAV.fmtDay(D.t0 + d * 864e5) + (d === 0 ? ' ' + new Date(D.t0).getUTCFullYear() : ''), x + 4, AX - 11); }
     }
 
     // rows

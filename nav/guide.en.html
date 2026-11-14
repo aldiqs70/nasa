@@ -1,7 +1,7 @@
 <h2>How to use Edge of Light</h2>
 <p class="lead">Choose a site, a landing day and a mission length. Each tab then answers one question about that plan.</p>
 <ol>
-  <li><b>Set the plan in the bar under the tabs.</b> Site, landing day, mission length in days (any number from 1 to 60), lander size, and the time being shown. The bar stays the same in every tab.</li>
+  <li><b>Set the plan in the bar under the tabs.</b> Site, landing date (any day from January 2026 to late 2030, the year is shown), mission length in days (any number from 1 to 60), lander size, and the time being shown. The bar stays the same in every tab.</li>
   <li><b>Read the Overview.</b> The ring shows one lap of the Sun after landing, and the sentence beside it says whether the mission works. The lines under it lead to the tab with the detail.</li>
   <li><b>Slip the date.</b> Drag around the ring, or drag the landing flag in Sites and dates, or use the − and + buttons. If the landing stops working, the page proposes the next date that works at this site, and the nearest site that works on this date.</li>
   <li><b>Try another place.</b> Pick a site from the list, or open Map and click anywhere on the Moon, or type coordinates. A picked point is analysed like any other site and joins the comparison.</li>
@@ -11,13 +11,10 @@
 <h3>What each tab shows</h3>
 <ul>
   <li><b>Overview:</b> the Ring of Light, the verdict, a one-line summary of each topic, and every site as a small ring.</li>
-  <li><b>Sky:</b> the full horizon around the site with the Sun and the Earth where they really are, and how long until each sets or rises.</li>
+  <li><b>Sky and map:</b> the full horizon around the site with the Sun and the Earth where they really are, how long until each sets or rises, and the Moon in 3D or as a 2D polar map. Click the map to analyse a point.</li>
   <li><b>Sites and dates:</b> 60 days of sunlight and Earth contact at every site, and what happens for each possible landing day.</li>
-  <li><b>Map:</b> the Moon in 3D or as a 2D polar map. Click to analyse a point.</li>
   <li><b>Power:</b> battery charge through the mission, where to point the panels and the antenna, and the lander’s settings.</li>
-  <li><b>Slope and terrain:</b> the ground 24 km around the site and the slopes inside the landing circle.</li>
-  <li><b>Ice and rover:</b> the nearest ice-bearing shadowed regions and whether a rover can drive to them.</li>
-  <li><b>Rocks:</b> the geology team’s notes, the estimated rock mix and the team’s map.</li>
+  <li><b>Rocks, slope and ice:</b> the estimated rock mix and the geology team’s notes, the ground 24 km around the site with the slopes inside the landing circle, and the nearest ice with a rover route to it.</li>
 </ul>
 
 <h3>Reading the Ring of Light</h3>
@@ -133,6 +130,26 @@ slope = atan( √( (∂h/∂x)² + (∂h/∂y)² ) · k )</div>
   <li><a href="https://quickmap.lroc.asu.edu/" target="_blank" rel="noopener">LROC QuickMap</a>: high-resolution images and illumination layers.</li>
   <li><a href="https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/" target="_blank" rel="noopener">Canadian Space Agency, Moon exploration</a>: lunar rover and exploration programmes.</li>
 </ul>
+
+<h2>References</h2>
+<p>Every dataset, constant and method used by the site.</p>
+<ol>
+  <li><b>Terrain.</b> Smith, D. E., et al. (2010). The Lunar Orbiter Laser Altimeter investigation on the Lunar Reconnaissance Orbiter mission. <i>Space Science Reviews</i> 150, 209–241.</li>
+  <li><b>South-pole elevation model</b> (LDEM_80S_80MPP_ADJ). Barker, M. K., et al. (2021). Improved LOLA elevation maps for south pole landing sites: error estimates and their impact on illumination conditions. <i>Planetary and Space Science</i> 203, 105119. Data: NASA GSFC Planetary Geodesy Data Archive, pgda.gsfc.nasa.gov/products/90.</li>
+  <li><b>Horizon and illumination method.</b> Mazarico, E., et al. (2011). Illumination conditions of the lunar polar regions using LOLA topography. <i>Icarus</i> 211, 1066–1081.</li>
+  <li><b>Sun, Earth and Moon orientation.</b> Folkner, W. M., Williams, J. G., Boggs, D. H. (2009). The planetary and lunar ephemeris DE 421. <i>IPN Progress Report</i> 42-178. Kernels from NASA NAIF: naif.jpl.nasa.gov.</li>
+  <li><b>SPICE toolkit.</b> Acton, C. H. (1996). Ancillary data services of NASA’s Navigation and Ancillary Information Facility. <i>Planetary and Space Science</i> 44, 65–70.</li>
+  <li><b>Solar constant, 1361 W/m².</b> Kopp, G., Lean, J. L. (2011). A new, lower value of total solar irradiance. <i>Geophysical Research Letters</i> 38, L01706.</li>
+  <li><b>Ice-bearing shadowed regions.</b> Lemelin, M., et al. (2021). Framework for coordinated efforts in the exploration of volatiles in the south polar region of the Moon. <i>Planetary Science Journal</i> 2, 103. Dataset: doi:10.5281/zenodo.4646092 (CC BY 4.0).</li>
+  <li><b>Ice detections.</b> Li, S., et al. (2018). Direct evidence of surface exposed water ice in the lunar polar regions. <i>PNAS</i> 115, 8907–8912.</li>
+  <li><b>LCROSS impact site.</b> Colaprete, A., et al. (2010). Detection of water in the LCROSS ejecta plume. <i>Science</i> 330, 463–468.</li>
+  <li><b>Iron (FeO).</b> Lawrence, D. J., et al. (2002). Iron abundances on the lunar surface as measured by the Lunar Prospector gamma-ray and neutron spectrometers. <i>Journal of Geophysical Research</i> 107(E12), 5130.</li>
+  <li><b>Thorium.</b> Lawrence, D. J., et al. (2003). Small-area thorium features on the lunar surface. <i>Journal of Geophysical Research</i> 108(E9), 5102.</li>
+  <li><b>Rock end-members.</b> Typical compositions set by the team in <code>js/rocks.js</code>. They are approximations, not measurements at the site.</li>
+  <li><b>Route search.</b> Dijkstra, E. W. (1959). A note on two problems in connexion with graphs. <i>Numerische Mathematik</i> 1, 269–271.</li>
+  <li><b>3D Moon.</b> CesiumJS and the Cesium Moon terrain (Cesium ion), built from Lunar Reconnaissance Orbiter data.</li>
+  <li><b>Lander sizes, rover slope limit and speed.</b> Illustrative values chosen by the team, editable in the site. They are not specifications of a real vehicle.</li>
+</ol>
 
 <h2>What is not modelled</h2>
 <ul>
