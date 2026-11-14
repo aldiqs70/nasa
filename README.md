@@ -1,4 +1,4 @@
-# حافة النور · Edge of Light — Lunar South Pole Mission Browser
+# LunarLink_JO — Lunar South Pole Mission Browser
 
 **NASA Space Apps Challenge 2026 · Challenge: CLPS Lunar Mission Browser**
 Team **Shabab Shihab** (شباب شهاب), the youth team of the Jordanian Astronomical Society.

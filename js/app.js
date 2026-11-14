@@ -1,5 +1,5 @@
 /*
- * حافة النور · Edge of Light — main application.
+ * LunarLink_JO — main application.
  * Views: home (natural Sun/Earth/Moon + overview map), 3D explorer (Cesium Moon), mission planner,
  * site comparison, water-ice regions, methods & sources.
  */

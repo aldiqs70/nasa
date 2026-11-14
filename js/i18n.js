@@ -19,9 +19,7 @@
 
   // Arabic text in index.html -> English (keys are the text with spaces collapsed)
   const TXT = {
-    'حافة النور · Edge of Light': 'Edge of Light · Lunar South Pole',
-    'حافة النور': 'Edge of Light',
-    'Edge of Light · Lunar South Pole': 'Lunar South Pole Mission Browser',
+    'Lunar South Pole': 'Lunar South Pole Mission Browser',
     'الرئيسية': 'Home',
     'المستكشف ثلاثي الأبعاد': '3D Explorer',
     'مخطط المهمة': 'Mission Planner',
@@ -59,7 +57,7 @@
     'اختار نافذة الهبوط ومدة المهمة والبطارية والاستهلاك، وبنحسبلك أفضل 3 مواقع بالقطب، مع القرب من الجليد.': 'Choose the landing window, mission length, battery and power draw, and we find the 3 best sites at the pole, including distance to ice.',
     'مقارنة موقعين': 'Compare two sites',
     'الإضاءة والاتصال والطاقة وخط الأفق جنب بعض، لنفس الفترة ونفس المركبة.': 'Light, Earth contact, power and horizon side by side, for the same period and the same lander.',
-    'حافة النور · فريق شباب شهاب · الجمعية الفلكية الأردنية · NASA Space Apps Challenge 2026': 'Edge of Light · Team Shabab Shihab · Jordanian Astronomical Society · NASA Space Apps Challenge 2026',
+    'LunarLink_JO · فريق شباب شهاب · الجمعية الفلكية الأردنية · NASA Space Apps Challenge 2026': 'LunarLink_JO · Team Shabab Shihab · Jordanian Astronomical Society · NASA Space Apps Challenge 2026',
     'البيانات من ناسا (LOLA, LRO, M3, Lunar Prospector, NAIF/JPL). نموذج تعليمي وبحثي، مش أداة تخطيط رسمية.': 'Data from NASA (LOLA, LRO, M3, Lunar Prospector, NAIF/JPL). An educational and research model, not an official mission-planning tool.',
     'الطبقات': 'Layers',
     'زاوية الرؤية': 'View',

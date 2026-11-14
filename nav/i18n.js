@@ -2,7 +2,7 @@
 (function () {
   const NAV = (window.NAV = window.NAV || {});
   const S = {
-    brand: ['Edge of Light', 'حافة النور'],
+    brand: ['LunarLink_JO', 'LunarLink_JO'],
     tagline: ['Lunar landing site navigator', 'ملّاح مواقع الهبوط على القمر'],
     nav_navigator: ['Navigator', 'الملّاح'],
     nav_file: ['Site file', 'ملف الموقع'],
