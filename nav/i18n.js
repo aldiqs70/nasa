@@ -7,7 +7,6 @@
     nav_navigator: ['Navigator', 'الملّاح'],
     nav_file: ['Site file', 'ملف الموقع'],
     nav_method: ['Method', 'المنهجية'],
-    nav_classic: ['Previous version', 'النسخة السابقة'],
     sky_title: ['The sky from the landing site', 'السماء من موقع الهبوط'],
     site: ['Site', 'الموقع'],
     power: ['Panel output', 'إنتاج الألواح'],
