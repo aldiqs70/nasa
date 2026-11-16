@@ -44,7 +44,7 @@
     <span class="ctx-k" id="landK" data-i18n="landing">Landing</span>
     <div class="stepper" role="group" aria-labelledby="landK">
       <button type="button" id="landPrev" aria-label="One day earlier">&#x2212;</button>
-      <label class="vh" for="landDate" data-i18n="landing">Landing</label><input type="date" id="landDate" class="date-in">
+      <label class="vh" for="landDate" data-i18n="landing">Landing</label><span class="date-wrap"><span class="date-txt" id="landDateTxt"></span><input type="date" id="landDate" class="date-in" lang="en"></span>
       <button type="button" id="landNext" aria-label="One day later">+</button>
     </div>
     <span class="slip" id="slipTxt"></span>
@@ -55,7 +55,7 @@
     <div class="seg" id="missionSeg" role="group" aria-label="Mission length">
       <button type="button" data-v="7">7</button><button type="button" data-v="14" class="on">14</button><button type="button" data-v="28">28</button>
     </div>
-    <input id="missionIn" class="num-in" type="number" min="1" max="60" step="1" value="14" inputmode="numeric">
+    <input id="missionIn" class="num-in" type="number" lang="en" dir="ltr" min="1" max="60" step="1" value="14" inputmode="numeric">
     <span class="ctx-u" data-i18n="days">days</span>
   </div>
   <div class="ctx-g">
@@ -238,14 +238,14 @@
   <div class="blk">
     <h3 data-i18n="lander_title">The lander</h3>
     <form class="lander-form" id="landerForm" novalidate>
-      <label><span data-i18n="lf_cap">Battery (Wh)</span><input id="lfCap" type="number" min="100" step="100"></label>
-      <label><span data-i18n="lf_load">Working draw (W)</span><input id="lfLoad" type="number" min="1" step="10"></label>
-      <label><span data-i18n="lf_area">Panels (m²)</span><input id="lfArea" type="number" min="0.1" step="0.5"></label>
-      <label><span data-i18n="lf_eff">Panel efficiency (%)</span><input id="lfEff" type="number" min="5" max="45" step="1"></label>
-      <label><span data-i18n="lf_min">Lowest charge allowed (%)</span><input id="lfMin" type="number" min="0" max="80" step="5"></label>
-      <label><span data-i18n="lf_sleep">Sleep draw (W)</span><input id="lfSleep" type="number" min="0" step="1"></label>
+      <label><span data-i18n="lf_cap">Battery (Wh)</span><input id="lfCap" type="number" lang="en" dir="ltr" min="100" step="100"></label>
+      <label><span data-i18n="lf_load">Working draw (W)</span><input id="lfLoad" type="number" lang="en" dir="ltr" min="1" step="10"></label>
+      <label><span data-i18n="lf_area">Panels (m²)</span><input id="lfArea" type="number" lang="en" dir="ltr" min="0.1" step="0.5"></label>
+      <label><span data-i18n="lf_eff">Panel efficiency (%)</span><input id="lfEff" type="number" lang="en" dir="ltr" min="5" max="45" step="1"></label>
+      <label><span data-i18n="lf_min">Lowest charge allowed (%)</span><input id="lfMin" type="number" lang="en" dir="ltr" min="0" max="80" step="5"></label>
+      <label><span data-i18n="lf_sleep">Sleep draw (W)</span><input id="lfSleep" type="number" lang="en" dir="ltr" min="0" step="1"></label>
       <label><span data-i18n="lf_mode">Panels</span><select id="lfMode"><option value="track" data-i18n="lf_track">Turn with the Sun</option><option value="fixed" data-i18n="lf_fixed">Fixed direction</option></select></label>
-      <label><span data-i18n="lf_az">Fixed panel faces (°)</span><input id="lfAz" type="number" min="0" max="359" step="5"></label>
+      <label><span data-i18n="lf_az">Fixed panel faces (°)</span><input id="lfAz" type="number" lang="en" dir="ltr" min="0" max="359" step="5"></label>
       <label class="chk lf-wide"><input type="checkbox" id="lfHib"><span data-i18n="lf_hib">Can sleep through the dark and wake with the Sun</span></label>
     </form>
     <p class="conf" data-i18n="lander_note">The three sizes are illustrative, not the specifications of a real lander. Panels stand upright because the polar Sun stays within a few degrees of the horizon.</p>
@@ -319,8 +319,8 @@
       <div class="blk">
         <h3 data-i18n="rover_set">The rover</h3>
         <form class="lander-form rover-form" id="roverForm" novalidate>
-          <label><span data-i18n="rv_slope">Steepest slope it can drive (°)</span><input id="rvSlope" type="number" min="3" max="35" step="1" value="15"></label>
-          <label><span data-i18n="rv_speed">Average speed (km/h)</span><input id="rvSpeed" type="number" min="0.05" max="10" step="0.05" value="0.4"></label>
+          <label><span data-i18n="rv_slope">Steepest slope it can drive (°)</span><input id="rvSlope" type="number" lang="en" dir="ltr" min="3" max="35" step="1" value="15"></label>
+          <label><span data-i18n="rv_speed">Average speed (km/h)</span><input id="rvSpeed" type="number" lang="en" dir="ltr" min="0.05" max="10" step="0.05" value="0.4"></label>
         </form>
         <div id="roverOut"></div>
       </div>

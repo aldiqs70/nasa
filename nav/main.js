@@ -199,7 +199,7 @@
   }
   function renderLanding() {
     const li = $('landDate'), iso = (ms) => new Date(ms).toISOString().slice(0, 10);
-    li.value = iso(D.t0 + st.land * DAY); li.min = iso(D.range[0]); li.max = iso(D.range[1] - 125 * DAY); li.title = T('date_range');
+    li.value = iso(D.t0 + st.land * DAY); li.min = iso(D.range[0]); li.max = iso(D.range[1] - 125 * DAY); li.title = T('date_range'); $('landDateTxt').textContent = NAV.fmtDayLong(D.t0 + st.land * DAY);
     $('ctxSum').textContent = T('plan_sum', { date: NAV.fmtDay(D.t0 + st.land * 864e5), n: st.mission, lander: landerName() });
     const n = st.land - st.plan;
     $('slipTxt').textContent = n > 0 ? T('slip_late', { n }) : n < 0 ? T('slip_early', { n: -n }) : '';
@@ -464,6 +464,7 @@
   $('landPrev').addEventListener('click', () => setLanding(st.land - 1));
   $('landNext').addEventListener('click', () => setLanding(st.land + 1));
   $('slipReset').addEventListener('click', () => setLandingDate(planMs));
+  $('landDate').addEventListener('click', (e) => { try { e.target.showPicker(); } catch (err) { /* older browsers open their own picker */ } });
   $('landDate').addEventListener('change', (e) => { const ms = Date.parse(e.target.value + 'T00:00:00Z'); if (!Number.isNaN(ms)) { planMs = ms; setLandingDate(ms); st.plan = st.land; need('plan'); } });
   $('toNow').addEventListener('click', () => { const f = (Date.now() - D.t0) / HOUR; if (f < 0 || f > D.windowH - 1) { planMs = Math.floor(Date.now() / DAY) * DAY + DAY; setLandingDate(planMs); st.plan = st.land; } st.f = Math.max(0, Math.min(D.windowH - 1, (Date.now() - D.t0) / HOUR)); need('plan'); });
   $('toLanding').addEventListener('click', () => { st.f = st.land * 24; need('time'); });
