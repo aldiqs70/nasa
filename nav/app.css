@@ -370,3 +370,16 @@ h4 { margin: 0 0 8px; font-size: var(--s13); font-weight: 600; }
 .date-txt { padding: 0 10px; font-size: var(--s13); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .date-wrap .date-in { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; cursor: pointer; }
 .date-wrap:focus-within { outline: 2px solid var(--sun, #FFD166); outline-offset: 1px; }
+
+.team { max-width: 78ch; display: grid; gap: 16px; line-height: 1.6; }
+.team h2 { font-size: var(--s24); }
+.team h3 { font-family: var(--font-display); font-stretch: var(--wide); font-size: var(--s15); margin-top: 14px; }
+.team-sub { color: var(--muted); }
+.people { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.person { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 24px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.person .pn { font-weight: 600; font-size: var(--s15); }
+.person .pm { color: var(--muted); font-size: var(--s13); text-decoration: none; word-break: break-all; }
+.person .pm:hover, .person .pm:focus-visible { color: var(--text); text-decoration: underline; }
+.contact-btn { display: inline-flex; text-decoration: none; }
+.foot-team { margin-bottom: 6px; }
+.foot-team a { color: var(--text); }

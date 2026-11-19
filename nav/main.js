@@ -1,7 +1,7 @@
 /* Wiring: one scenario (site, landing day, mission length, lander, time shown) drives every tab. */
 (async function () {
   const NAV = window.NAV, T = NAV.T, $ = (id) => document.getElementById(id), HOUR = 3600e3;
-  const TABS = ['overview', 'sky', 'dates', 'power', 'rocks', 'guide'], ALIAS = { map: 'sky', slope: 'rocks', ice: 'rocks' }, DAY = 864e5;
+  const TABS = ['overview', 'sky', 'dates', 'power', 'rocks', 'guide', 'team'], ALIAS = { map: 'sky', slope: 'rocks', ice: 'rocks' }, DAY = 864e5;
   const st = { tab: 'overview', sel: 0, f: 0, land: 4, plan: 4, mission: 14, view: '3d', mapLayer: 'sun', fileLayer: 'zone', circle: 1000, iceSel: 0, playing: false, g3: 'idle', mis: null };
 
   let D;
@@ -88,7 +88,7 @@
     st.tab = name;
     document.querySelectorAll('section.tab').forEach((el) => { el.hidden = el.dataset.tab !== name; });
     document.querySelectorAll('#tabs a').forEach((el) => { if (el.dataset.tab === name) { el.setAttribute('aria-current', 'page'); el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } else el.removeAttribute('aria-current'); });
-    $('ctx').classList.toggle('quiet', name === 'guide');
+    $('ctx').classList.toggle('quiet', name === 'guide' || name === 'team');
     layout();
     if (name === 'sky') setView(st.view);
     if (part) requestAnimationFrame(() => { const el = $('tab-' + part); if (el) el.scrollIntoView({ block: 'start' }); }); else window.scrollTo(0, 0);
